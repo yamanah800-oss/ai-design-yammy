@@ -320,6 +320,223 @@
       font-weight: 700;
     }
 
+    /* ===== Section 4: Flow ===== */
+    .flow-section {
+      background: linear-gradient(180deg, #FFF8EE 0%, #FFF1E0 100%);
+    }
+    .flow-heading {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .flow-heading-pill {
+      display: inline-block;
+      background: var(--mint);
+      color: #fff;
+      font-weight: 900;
+      font-size: 1.05rem;
+      padding: 10px 30px;
+      border-radius: var(--radius-pill);
+      box-shadow: 0 4px 12px rgba(125,211,192,0.35);
+    }
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      position: relative;
+    }
+    .flow-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 24px 18px 22px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      border: 2px solid var(--line);
+      position: relative;
+    }
+    .flow-card::after {
+      content: '▶';
+      position: absolute;
+      right: -14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--pink);
+      font-size: 1rem;
+      font-weight: 700;
+      z-index: 2;
+    }
+    .flow-card:last-child::after { display: none; }
+    .flow-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--pink);
+      color: #fff;
+      font-weight: 900;
+      font-size: 0.95rem;
+      margin-bottom: 10px;
+    }
+    .flow-card-title {
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 14px;
+      line-height: 1.5;
+      min-height: 3em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .flow-icon {
+      width: 56px; height: 56px;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #FFF7E5;
+      font-size: 1.7rem;
+    }
+    .flow-card-text {
+      font-size: 0.85rem;
+      color: var(--text-soft);
+      line-height: 1.7;
+      text-align: left;
+    }
+
+    /* ===== Section 5/6/7: Three columns ===== */
+    .three-col-section {
+      background: var(--bg);
+    }
+    .three-col-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+    .col-card {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      padding: 28px 24px;
+      box-shadow: var(--shadow-sm);
+      border: 2px solid var(--line);
+      display: flex;
+      flex-direction: column;
+    }
+    .col-card-title {
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: 900;
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      margin: 0 auto 22px;
+      display: inline-block;
+      align-self: center;
+    }
+    .col-industry .col-card-title { background: #FFEFD8; color: #B07A1F; }
+    .col-result .col-card-title { background: #FFE0EC; color: var(--pink-deep); }
+    .col-price .col-card-title { background: #E1F4EE; color: var(--mint-deep); }
+
+    .industry-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .industry-item {
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-soft);
+    }
+    .industry-icon {
+      width: 48px; height: 48px;
+      margin: 0 auto 4px;
+      border-radius: 12px;
+      background: #FFF7E5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+
+    .result-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+    .result-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+    .result-list li::before {
+      content: '';
+      flex-shrink: 0;
+      width: 20px; height: 20px;
+      border-radius: 5px;
+      background-color: #FFE0EC;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E94B86' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: 12px 12px;
+      margin-top: 2px;
+    }
+
+    .price-info {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex: 1;
+    }
+    .price-info-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.92rem;
+    }
+    .price-info-icon {
+      width: 28px; height: 28px;
+      flex-shrink: 0;
+      background: #E1F4EE;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+    }
+    .price-divider {
+      border: none;
+      border-top: 2px dashed var(--line);
+      margin: 8px 0;
+    }
+    .price-amount-block {
+      text-align: center;
+      padding-top: 6px;
+    }
+    .price-label {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-soft);
+      margin-bottom: 4px;
+    }
+    .price-amount {
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: var(--pink);
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+    .price-tax {
+      font-size: 0.85rem;
+      color: var(--text-soft);
+      margin-left: 4px;
+    }
+
     /* ===== Responsive ===== */
     @media (max-width: 860px) {
       .hero { padding: 90px 0 50px; }
@@ -340,10 +557,35 @@
       .section { padding: 56px 0; }
       .section-title { font-size: 1.35rem; }
       .header-cta { padding: 8px 16px; font-size: 0.8rem; }
+      .flow-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .flow-card::after {
+        right: 50%;
+        top: auto;
+        bottom: -14px;
+        transform: translateX(50%) rotate(90deg);
+      }
+      .flow-card:nth-child(2n)::after { display: none; }
+      .three-col-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .price-amount { font-size: 2rem; }
     }
     @media (max-width: 480px) {
       .hero-cta { width: 100%; text-align: center; padding: 14px 20px; }
       .pb-card { padding: 24px 20px; }
+      .flow-grid {
+        grid-template-columns: 1fr;
+      }
+      .flow-card::after {
+        right: 50%;
+        bottom: -14px;
+        transform: translateX(50%) rotate(90deg);
+      }
+      .flow-card:nth-child(2n)::after { display: block; }
+      .industry-grid { grid-template-columns: repeat(3, 1fr); }
     }
   </style>
 </head>
@@ -429,7 +671,119 @@
     </div>
   </section>
 
-  <!-- STEP3-B / STEP3-C で追加予定: 講座の流れ / 業種 / 成果 / 料金 / 講師 / 準備 / クロージング -->
+  <!-- ===== Section 4: Flow ===== -->
+  <section class="section flow-section">
+    <div class="container">
+      <div class="flow-heading">
+        <span class="flow-heading-pill">講座の流れ（90分）</span>
+      </div>
+      <div class="flow-grid">
+        <div class="flow-card">
+          <div class="flow-num">1</div>
+          <div class="flow-icon">💬</div>
+          <h3 class="flow-card-title">ヒアリング</h3>
+          <p class="flow-card-text">あなたの業種、サービス、作りたい画像を確認します。</p>
+        </div>
+        <div class="flow-card">
+          <div class="flow-num">2</div>
+          <div class="flow-icon">📋</div>
+          <h3 class="flow-card-title">業種専用<br>プロンプト作成</h3>
+          <p class="flow-card-text">画像タイプ、スタイル、構図、カラー、テキストを整理し、使い回せる型を作ります。</p>
+        </div>
+        <div class="flow-card">
+          <div class="flow-num">3</div>
+          <div class="flow-icon">🔒</div>
+          <h3 class="flow-card-title">Identity<br>Locking実践</h3>
+          <p class="flow-card-text">ブランドキャラクターやモデルを作成し、複数のシーンへ展開します。</p>
+        </div>
+        <div class="flow-card">
+          <div class="flow-num">4</div>
+          <div class="flow-icon">👉</div>
+          <h3 class="flow-card-title">個別アドバイス</h3>
+          <p class="flow-card-text">マルチ画像合成、4K出力、Nano Banana 2とProの使い分けなど、次にやるべきことを整理します。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Section 5/6/7 : Industry / Result / Price ===== -->
+  <section class="section three-col-section">
+    <div class="container">
+      <div class="three-col-grid">
+        <!-- Section 5: Industry -->
+        <div class="col-card col-industry">
+          <h2 class="col-card-title">対象業種の例</h2>
+          <div class="industry-grid">
+            <div class="industry-item">
+              <div class="industry-icon">🛒</div>
+              EC・物販
+            </div>
+            <div class="industry-item">
+              <div class="industry-icon">☕</div>
+              飲食・カフェ
+            </div>
+            <div class="industry-item">
+              <div class="industry-icon">✂️</div>
+              美容・サロン
+            </div>
+            <div class="industry-item">
+              <div class="industry-icon">🏠</div>
+              建築・インテリア
+            </div>
+            <div class="industry-item">
+              <div class="industry-icon">📚</div>
+              講師・教育
+            </div>
+            <div class="industry-item">
+              <div class="industry-icon">…</div>
+              その他の業種<br>も対応可能！
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 6: Result -->
+        <div class="col-card col-result">
+          <h2 class="col-card-title">受講後に得られる成果</h2>
+          <ul class="result-list">
+            <li>業種専用プロンプトテンプレート</li>
+            <li>実務用AI画像3〜5枚</li>
+            <li>5層フレームワーク早見表</li>
+            <li>困ったときの対処法チェックリスト</li>
+            <li>今後の画像制作ワークフロー🎁</li>
+          </ul>
+        </div>
+
+        <!-- Section 7: Price -->
+        <div class="col-card col-price">
+          <h2 class="col-card-title">受講形式・料金</h2>
+          <div class="price-info">
+            <div class="price-info-row">
+              <span class="price-info-icon">✉️</span>
+              オンライン（Zoom）
+            </div>
+            <div class="price-info-row">
+              <span class="price-info-icon">⏱</span>
+              90分
+            </div>
+            <div class="price-info-row">
+              <span class="price-info-icon">👥</span>
+              マンツーマン
+            </div>
+          </div>
+          <hr class="price-divider">
+          <div class="price-amount-block">
+            <div class="price-label">受講料</div>
+            <div>
+              <span class="price-amount">3,000円</span>
+              <span class="price-tax">（税込）</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP3-C で追加予定: 講師 / 準備 / クロージング -->
 
 </body>
 </html>
