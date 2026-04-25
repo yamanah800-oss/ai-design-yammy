@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <meta property="og:title" content="NanoBanana実践編 | あなたの業種で使える画像を量産するマンツーマン講座">
   <meta property="og:description" content="AI画像を、あなたの仕事で“本当に使える素材”に変える90分。業種専用プロンプトを一緒に作成します。">
-  <meta property="og:image" content="course2.png">
+  <meta property="og:image" content="logo.png">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -228,6 +228,75 @@
     .hero-visual img {
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-lg);
+    }
+    .hero-collage {
+      position: relative;
+      aspect-ratio: 4 / 5;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, #FFF1E0 0%, #FFE0EC 100%);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      padding: 18px;
+    }
+    .hc-tile {
+      position: absolute;
+      border-radius: 14px;
+      box-shadow: 0 6px 18px rgba(60,40,20,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      font-weight: 900;
+      color: #fff;
+      text-align: center;
+      padding: 10px;
+      line-height: 1.4;
+    }
+    .hc-tile small {
+      font-size: 0.7rem;
+      font-weight: 700;
+      opacity: 0.9;
+      margin-top: 4px;
+      letter-spacing: 0.05em;
+    }
+    .hc-1 {
+      top: 6%; left: 8%;
+      width: 46%; aspect-ratio: 1/1;
+      background: linear-gradient(135deg, #6B4F36 0%, #B08864 100%);
+      font-size: 0.95rem;
+      transform: rotate(-3deg);
+    }
+    .hc-2 {
+      top: 4%; right: 6%;
+      width: 38%; aspect-ratio: 1/1;
+      background: linear-gradient(135deg, var(--pink) 0%, var(--pink-deep) 100%);
+      font-size: 1.5rem;
+      transform: rotate(4deg);
+    }
+    .hc-2 strong { font-size: 2.2rem; line-height: 1; display: block; }
+    .hc-3 {
+      bottom: 22%; left: 4%;
+      width: 42%; aspect-ratio: 4/3;
+      background: linear-gradient(135deg, #7DD3C0 0%, #4FB8A2 100%);
+      font-size: 0.85rem;
+      transform: rotate(-2deg);
+    }
+    .hc-4 {
+      bottom: 6%; right: 8%;
+      width: 50%; aspect-ratio: 5/3;
+      background: linear-gradient(135deg, #F6C100 0%, #E89B00 100%);
+      color: #5b4500;
+      font-size: 0.9rem;
+      transform: rotate(2deg);
+    }
+    .hc-4 strong { font-size: 1.4rem; line-height: 1.2; display: block; }
+    .hc-banana {
+      position: absolute;
+      top: 38%; left: 50%;
+      transform: translate(-50%, -50%) rotate(-12deg);
+      font-size: 3.2rem;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+      z-index: 2;
     }
     .hero-stamp {
       position: absolute;
@@ -894,7 +963,13 @@
           <a href="#cta" class="hero-cta">受講料3,000円で申し込む →</a>
         </div>
         <div class="hero-visual">
-          <img src="course2.png" alt="NanoBanana実践編 講座イメージ">
+          <div class="hero-collage" role="img" aria-label="NanoBananaで作る画像のサンプル：カフェ、セール告知、店舗、サービス紹介">
+            <div class="hc-tile hc-1">Cafe<small>NEW OPEN</small></div>
+            <div class="hc-tile hc-2"><strong>30%</strong>SUMMER<small>SALE</small></div>
+            <div class="hc-tile hc-3">店舗<small>INTERIOR</small></div>
+            <div class="hc-tile hc-4"><strong>うるおう、清らかな素肌へ</strong><small>SKIN CARE</small></div>
+            <div class="hc-banana" aria-hidden="true">🍌</div>
+          </div>
           <div class="hero-stamp">
             90分で<br><strong>3〜5枚</strong><br>完成！
           </div>
