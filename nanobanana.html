@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NanoBanana実践編 | あなたの業種で使える画像を量産するマンツーマン講座 - AIデザイン教室YAMMY</title>
+  <meta name="description" content="NanoBanana実践編。90分のマンツーマン講座で、あなたの業種専用のAI画像プロンプトを作り、SNS画像・バナー・チラシ・告知画像を3〜5枚完成。受講料3,000円（税込）。">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <meta property="og:title" content="NanoBanana実践編 | あなたの業種で使える画像を量産するマンツーマン講座">
+  <meta property="og:description" content="AI画像を、あなたの仕事で“本当に使える素材”に変える90分。業種専用プロンプトを一緒に作成します。">
+  <meta property="og:image" content="course2.png">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FFF8EE;
+      --bg-alt: #FFFFFF;
+      --bg-soft: #FFF1E0;
+      --text: #333333;
+      --text-soft: #5b5b5b;
+      --pink: #FF6B9D;
+      --pink-deep: #E94B86;
+      --mint: #7DD3C0;
+      --mint-deep: #4FB8A2;
+      --yellow: #FFD93D;
+      --yellow-deep: #F6C100;
+      --line: #F0E4D0;
+      --shadow-sm: 0 2px 6px rgba(60,40,20,0.06);
+      --shadow-md: 0 8px 24px rgba(60,40,20,0.08);
+      --shadow-lg: 0 16px 40px rgba(60,40,20,0.12);
+      --radius: 16px;
+      --radius-lg: 24px;
+      --radius-pill: 999px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+      color: var(--text);
+      line-height: 1.85;
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; height: auto; display: block; }
+    a { color: inherit; }
+
+    /* ===== Layout ===== */
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .section {
+      padding: 72px 0;
+    }
+    .section-title {
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 900;
+      margin-bottom: 40px;
+      position: relative;
+      display: inline-block;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .section-title::before,
+    .section-title::after {
+      content: '';
+      display: inline-block;
+      width: 24px;
+      height: 2px;
+      background: var(--pink);
+      vertical-align: middle;
+      margin: 0 16px;
+    }
+
+    /* ===== Header ===== */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      background: rgba(255, 248, 238, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+    .header-inner {
+      max-width: 1080px; margin: 0 auto; padding: 0 24px;
+      height: 60px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { display: flex; align-items: center; text-decoration: none; gap: 8px; }
+    .logo img { height: 32px; width: auto; }
+    .header-cta {
+      background: var(--pink);
+      color: #fff;
+      text-decoration: none;
+      padding: 10px 22px;
+      border-radius: var(--radius-pill);
+      font-weight: 700;
+      font-size: 0.88rem;
+      box-shadow: 0 4px 12px rgba(255,107,157,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .header-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(255,107,157,0.4);
+    }
+
+    /* ===== Hero ===== */
+    .hero {
+      background: linear-gradient(180deg, #FFF8EE 0%, #FFEFD8 100%);
+      padding: 110px 0 60px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 280px; height: 280px;
+      background: radial-gradient(circle, rgba(255,217,61,0.35), transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -100px; left: -100px;
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, rgba(125,211,192,0.25), transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 40px;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-eyebrow {
+      display: inline-block;
+      background: #fffbe9;
+      color: #8a6d00;
+      font-weight: 700;
+      font-size: 0.92rem;
+      padding: 8px 18px;
+      border-radius: var(--radius-pill);
+      border: 2px dashed var(--yellow-deep);
+      margin-bottom: 16px;
+    }
+    .hero-badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: var(--radius-pill);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    .badge-pink { background: var(--pink); color: #fff; }
+    .badge-mint { background: var(--mint); color: #fff; }
+    .badge-yellow { background: var(--yellow); color: #6b5400; }
+    .hero-title {
+      font-size: clamp(1.7rem, 4.5vw, 2.6rem);
+      font-weight: 900;
+      line-height: 1.45;
+      margin-bottom: 20px;
+      letter-spacing: 0.01em;
+    }
+    .hero-title .em-pink {
+      color: var(--pink);
+      position: relative;
+    }
+    .hero-title .em-pink::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: -2px;
+      height: 6px;
+      background: rgba(255,217,61,0.6);
+      z-index: -1;
+    }
+    .hero-sub {
+      font-size: 1rem;
+      color: var(--text-soft);
+      margin-bottom: 24px;
+      line-height: 1.85;
+    }
+    .hero-tags {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 24px;
+    }
+    .tag-mint {
+      background: var(--mint);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+    }
+    .tag-text { color: var(--text-soft); font-size: 0.9rem; align-self: center; }
+    .hero-cta {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--pink) 0%, var(--pink-deep) 100%);
+      color: #fff;
+      text-decoration: none;
+      padding: 16px 40px;
+      border-radius: var(--radius-pill);
+      font-weight: 900;
+      font-size: 1.05rem;
+      box-shadow: 0 8px 22px rgba(255,107,157,0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .hero-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(255,107,157,0.45);
+    }
+    .hero-visual {
+      position: relative;
+    }
+    .hero-visual img {
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+    }
+    .hero-stamp {
+      position: absolute;
+      bottom: -16px;
+      right: -16px;
+      width: 130px; height: 130px;
+      background: var(--pink);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+      transform: rotate(-8deg);
+      border: 4px solid #fff;
+    }
+    .hero-stamp strong {
+      font-size: 1.4rem;
+      display: block;
+    }
+
+    /* ===== Two-column problem & benefit ===== */
+    .pb-section {
+      background: var(--bg);
+      padding: 60px 0;
+    }
+    .pb-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .pb-card {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      box-shadow: var(--shadow-sm);
+      border: 2px solid var(--line);
+      position: relative;
+    }
+    .pb-card-problem { border-color: #FFE0CF; background: #FFF7F0; }
+    .pb-card-benefit { border-color: #D7F0E9; background: #F2FBF8; }
+    .pb-card-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 22px;
+      padding-bottom: 14px;
+      border-bottom: 2px dashed var(--line);
+    }
+    .pb-card-problem .pb-card-title { color: #E07A4F; }
+    .pb-card-benefit .pb-card-title { color: var(--mint-deep); }
+    .pb-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .pb-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+    .pb-list li::before {
+      content: '';
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: 14px 14px;
+      margin-top: 2px;
+    }
+    .pb-card-problem .pb-list li::before {
+      background-color: #FFD9C2;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E07A4F' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+    }
+    .pb-card-benefit .pb-list li::before {
+      background-color: #BFEBDD;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234FB8A2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+    }
+    .pb-list li strong {
+      color: var(--pink);
+      font-weight: 700;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 860px) {
+      .hero { padding: 90px 0 50px; }
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+      }
+      .hero-stamp {
+        width: 100px; height: 100px;
+        font-size: 0.8rem;
+        bottom: -10px; right: 8px;
+      }
+      .hero-stamp strong { font-size: 1.1rem; }
+      .pb-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .section { padding: 56px 0; }
+      .section-title { font-size: 1.35rem; }
+      .header-cta { padding: 8px 16px; font-size: 0.8rem; }
+    }
+    @media (max-width: 480px) {
+      .hero-cta { width: 100%; text-align: center; padding: 14px 20px; }
+      .pb-card { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Header ===== -->
+  <header>
+    <div class="header-inner">
+      <a href="index.html" class="logo">
+        <img src="logo.png" alt="AIデザイン教室 YAMMY">
+      </a>
+      <a href="#cta" class="header-cta">申し込む</a>
+    </div>
+  </header>
+
+  <!-- ===== Hero (Section 1) ===== -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div class="hero-text">
+          <span class="hero-eyebrow">AI画像を、あなたの仕事で“本当に使える素材”に変える90分！</span>
+          <div class="hero-badge-row">
+            <span class="badge badge-pink">🍌 NanoBanana実践編</span>
+            <span class="badge badge-yellow">実務で使える！自分で作れる！</span>
+          </div>
+          <h1 class="hero-title">
+            あなたの<span class="em-pink">業種</span>で使える<br>
+            <span class="em-pink">画像</span>を<span class="em-pink">量産</span>する<br>
+            マンツーマン講座
+          </h1>
+          <div class="hero-tags">
+            <span class="tag-mint">SNS画像</span>
+            <span class="tag-mint">バナー</span>
+            <span class="tag-mint">チラシ</span>
+            <span class="tag-mint">告知画像</span>
+            <span class="tag-text">など</span>
+          </div>
+          <p class="hero-sub">
+            毎回ゼロから考えるのは、もう終わりにしませんか？<br>
+            この講座では、あなたの業種に合わせた<strong>専用プロンプト</strong>を一緒に作り、<br>
+            90分で実務に使えるAI画像を<strong>3〜5枚完成</strong>させます！
+          </p>
+          <a href="#cta" class="hero-cta">受講料3,000円で申し込む →</a>
+        </div>
+        <div class="hero-visual">
+          <img src="course2.png" alt="NanoBanana実践編 講座イメージ">
+          <div class="hero-stamp">
+            90分で<br><strong>3〜5枚</strong><br>完成！
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Section 2 & 3 : Problem / Benefit ===== -->
+  <section class="pb-section">
+    <div class="container">
+      <div class="pb-grid">
+        <!-- Section 2: Problem -->
+        <div class="pb-card pb-card-problem">
+          <h2 class="pb-card-title">こんなお悩み ありませんか？</h2>
+          <ul class="pb-list">
+            <li>NanoBananaで画像は作れたけれど、<strong>仕事への活かし方</strong>が分からない</li>
+            <li>SNS画像やバナーを<strong>自分で作りたい</strong></li>
+            <li>毎回プロンプトを考えるのが大変</li>
+            <li>キャラクターやブランドモデルを<strong>固定して使いたい</strong></li>
+            <li>画像外注コストを減らしたい</li>
+          </ul>
+        </div>
+
+        <!-- Section 3: Benefit -->
+        <div class="pb-card pb-card-benefit">
+          <h2 class="pb-card-title">この講座でできるようになること！</h2>
+          <ul class="pb-list">
+            <li><strong>5層フレームワーク</strong>で、画像プロンプトの「型」が分かる</li>
+            <li>あなたの<strong>業種専用のプロンプトテンプレート</strong>が作れる</li>
+            <li><strong>Identity Locking</strong>で、同じキャラクターを複数シーンに展開できる</li>
+            <li>SNS画像・バナー・チラシ用の素材を自分で量産できる</li>
+            <li>講座内で実務用画像を<strong>3〜5枚完成</strong>できる</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP3-B / STEP3-C で追加予定: 講座の流れ / 業種 / 成果 / 料金 / 講師 / 準備 / クロージング -->
+
+</body>
+</html>
