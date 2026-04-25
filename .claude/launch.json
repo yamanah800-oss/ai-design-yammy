@@ -4,7 +4,7 @@
     {
       "name": "yammy-site",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8090", "--directory", "/Users/yammy/ai-design-yammy"],
+      "runtimeArgs": ["-m", "http.server", "8090", "--directory", "/home/user/ai-design-yammy"],
       "port": 8090
     }
   ]
