@@ -304,64 +304,93 @@
       width: 100%; height: auto; display: block;
     }
     /* Styled banners for new courses without image files */
+    /* ===== COURSE BANNERS ===== */
     .course-banner {
-      width: 100%; position: relative; overflow: hidden;
-      display: flex; align-items: flex-end; min-height: 210px;
+      width: 100%; position: relative; overflow: visible;
     }
+    /* Claude thumbnail: dark left half + person right */
     .course-banner-claude {
-      background: linear-gradient(150deg, #0f172a 0%, #1e1b4b 40%, #1e3a5f 100%);
+      background: linear-gradient(105deg, #1a2236 0%, #1a2236 52%, #2d3a52 52%, #3a4a6a 100%);
+      min-height: 220px;
+      display: flex; align-items: flex-end; padding: 0;
     }
-    .course-banner-claude::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse 60% 80% at 85% 50%, rgba(99,102,241,0.18) 0%, transparent 70%);
+    .course-banner-claude .cb-text {
+      position: relative; z-index: 2;
+      padding: 22px 18px 18px;
+      width: 58%;
     }
+    .course-banner-claude .cb-title {
+      font-size: 1.55rem; font-weight: 900; color: white;
+      line-height: 1.25; letter-spacing: -0.01em;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    .course-banner-claude .cb-title em {
+      font-style: normal; color: #f97316; display: inline;
+    }
+    .course-banner-claude .cb-sub {
+      font-size: 0.8rem; color: rgba(255,255,255,0.75);
+      font-weight: 400; margin-top: 8px;
+    }
+    .course-banner-claude .cb-person {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 48%;
+      background: linear-gradient(135deg, #2c3e6e 0%, #3d5080 40%, #4a3060 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem;
+    }
+    /* NanoBanana thumbnail: 2x2 photo grid + center text band */
     .course-banner-nano {
-      background: #111;
-      display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
-      min-height: 210px;
+      min-height: 220px;
+      display: grid; grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr; position: relative;
     }
-    .nano-cell {
-      position: relative; overflow: hidden;
+    .nano-cell { position: relative; overflow: hidden; min-height: 110px; }
+    .nano-cell-1 {
+      background: linear-gradient(160deg, #b08060 0%, #d4a882 40%, #e8cba8 100%);
     }
-    .nano-cell-1 { background: linear-gradient(135deg, #c9a882 0%, #e8d5c0 100%); }
-    .nano-cell-2 { background: linear-gradient(135deg, #f5f0e4 0%, #ede8d5 100%); }
-    .nano-cell-3 { background: linear-gradient(135deg, #8b1a2e 0%, #c0334d 100%); }
-    .nano-cell-4 { background: linear-gradient(135deg, #d4e4d0 0%, #b8ccb4 100%); }
+    .nano-cell-1::after {
+      content: '✦'; position: absolute; bottom: 8px; right: 8px;
+      font-size: 1.4rem; color: rgba(120,80,40,0.4);
+    }
+    .nano-cell-2 {
+      background: linear-gradient(135deg, #f0ebe0 0%, #e8e0cc 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nano-cell-2::before {
+      content: 'CAFÉ'; font-size: 1.3rem; font-weight: 900;
+      color: #8b6040; letter-spacing: 0.1em; opacity: 0.7;
+    }
+    .nano-cell-2 .online-badge {
+      position: absolute; top: 6px; right: 6px;
+      background: #f59e0b; color: white;
+      font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 3px;
+    }
+    .nano-cell-3 {
+      background: linear-gradient(145deg, #7a1020 0%, #a01830 50%, #c03050 100%);
+    }
+    .nano-cell-4 {
+      background: linear-gradient(135deg, #c8d8c0 0%, #a8c0a0 50%, #88a880 100%);
+    }
     .nano-overlay {
-      position: absolute; inset: 0; z-index: 2;
+      position: absolute; inset: 0; z-index: 3;
       display: flex; flex-direction: column; justify-content: center; align-items: center;
-      background: rgba(10,10,20,0.62);
-      padding: 20px;
+      background: rgba(8,8,24,0.65);
+      padding: 16px 12px;
     }
-    .course-banner-content {
-      position: relative; z-index: 1;
-      padding: 24px 22px 20px;
-      display: flex; flex-direction: column; gap: 8px;
+    .nano-overlay .cb-title {
+      font-size: 1.6rem; font-weight: 900; color: white;
+      text-align: center; line-height: 1.2;
+      font-family: 'Noto Sans JP', sans-serif;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
-    .course-banner-title {
-      font-size: 1.5rem; font-weight: 900; color: white;
-      line-height: 1.35; letter-spacing: -0.01em;
-      font-family: 'Inter', 'Noto Sans JP', sans-serif;
-    }
-    .course-banner-title em {
-      font-style: normal; color: #fb923c;
-    }
-    .nano-overlay .course-banner-title {
-      font-size: 1.55rem; text-align: center; line-height: 1.3;
-    }
-    .course-banner-subtitle {
-      font-size: 0.88rem; color: rgba(255,255,255,0.75); font-weight: 500;
-    }
-    .nano-overlay .course-banner-subtitle {
-      text-align: center; font-size: 0.92rem; color: rgba(255,255,255,0.85);
+    .nano-overlay .cb-sub {
+      font-size: 0.95rem; color: rgba(255,255,255,0.9);
+      font-weight: 500; margin-top: 8px; text-align: center;
     }
     .course-banner-badge {
-      display: inline-flex; align-items: center;
       background: #f59e0b; color: white;
-      font-size: 0.75rem; font-weight: 700;
-      padding: 3px 10px; border-radius: 4px;
-      position: absolute; top: 12px; right: 14px; z-index: 3;
+      font-size: 0.72rem; font-weight: 700;
+      padding: 4px 10px; border-radius: 4px;
+      position: absolute; top: 10px; right: 10px; z-index: 4;
     }
     .course-header {
       padding: 24px 28px 16px; position: relative;
@@ -675,10 +704,10 @@
           <!-- NotebookLM card (top-right) -->
           <div class="ai-fc ai-fc-notebooklm">
             <div class="ai-fc-icon">
-              <svg viewBox="0 0 150 82" fill="white">
-                <path d="M1 82 A74 74 0 0 1 149 82 L136 82 A61 61 0 0 0 14 82Z"/>
-                <path d="M27 82 A48 48 0 0 1 123 82 L110 82 A35 35 0 0 0 40 82Z"/>
-                <path d="M53 82 A22 22 0 0 1 97 82 L84 82 A9 9 0 0 0 66 82Z"/>
+              <svg viewBox="0 0 100 68" fill="white">
+                <path d="M6 68 L6 50 A44 44 0 0 1 94 50 L94 68 L86 68 L86 50 A36 36 0 0 0 14 50 L14 68Z"/>
+                <path d="M22 68 L22 50 A28 28 0 0 1 78 50 L78 68 L70 68 L70 50 A20 20 0 0 0 30 50 L30 68Z"/>
+                <path d="M38 68 L38 50 A12 12 0 0 1 62 50 L62 68 L54 68 L54 50 A4 4 0 0 0 46 50 L46 68Z"/>
               </svg>
             </div>
             NotebookLM
@@ -807,11 +836,12 @@
 
         <div class="course-card">
           <div class="course-banner course-banner-claude">
-            <span class="course-banner-badge">オンライン</span>
-            <div class="course-banner-content">
-              <p class="course-banner-title">Claudeの<br>主要機能を<br><em>90分</em>で体験</p>
-              <p class="course-banner-subtitle">チャットだけで終わらないAI活用</p>
+            <div class="cb-text">
+              <p class="cb-title">Claudeの<br>主要機能を<br><em>90分</em>で体験</p>
+              <p class="cb-sub">チャットだけで終わらないAI活用</p>
             </div>
+            <div class="cb-person">💻</div>
+            <span class="course-banner-badge">オンライン</span>
           </div>
           <div class="course-header">
             <span class="course-tag new">New</span>
@@ -835,12 +865,12 @@
         <div class="course-card">
           <div class="course-banner course-banner-nano">
             <div class="nano-cell nano-cell-1"></div>
-            <div class="nano-cell nano-cell-2"></div>
+            <div class="nano-cell nano-cell-2"><span class="online-badge">オンライン</span></div>
             <div class="nano-cell nano-cell-3"></div>
             <div class="nano-cell nano-cell-4"></div>
             <div class="nano-overlay">
-              <p class="course-banner-title">NanoBanana 実践編🍌</p>
-              <p class="course-banner-subtitle">業種別で使える画像を量産する</p>
+              <p class="cb-title">NanoBanana 実践編🍌</p>
+              <p class="cb-sub">業種別で使える画像を量産する</p>
             </div>
             <span class="course-banner-badge">オンライン</span>
           </div>
