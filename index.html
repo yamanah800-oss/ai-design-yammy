@@ -1114,28 +1114,88 @@
         return { sx: cx + x * scale, sy: cy + y * scale, scale, z };
       }
 
-      // === CONTINENT OUTLINES (longitude, latitude in radians) ===
-      // Rough simplified shapes of major landmasses
-      const continents = [
-        // North America
-        [[-2.10,1.10],[-1.75,1.18],[-1.40,1.05],[-1.20,0.75],[-1.30,0.45],[-1.55,0.30],[-1.75,0.40],[-1.95,0.55],[-2.15,0.85]],
-        // South America
-        [[-1.25,0.20],[-1.05,0.05],[-0.95,-0.30],[-1.05,-0.75],[-1.20,-0.95],[-1.35,-0.70],[-1.40,-0.30],[-1.35,0.05]],
-        // Europe + North Africa
-        [[-0.10,0.95],[0.25,1.00],[0.55,0.85],[0.65,0.55],[0.55,0.20],[0.35,0.05],[0.10,-0.10],[-0.15,0.05],[-0.20,0.40],[-0.20,0.75]],
-        // Africa (south)
-        [[0.10,-0.05],[0.55,-0.05],[0.70,-0.30],[0.65,-0.55],[0.45,-0.75],[0.20,-0.65],[0.05,-0.40]],
-        // Asia
-        [[0.65,1.10],[1.20,1.20],[1.85,1.05],[2.20,0.85],[2.30,0.55],[2.10,0.30],[1.65,0.20],[1.10,0.25],[0.80,0.40],[0.65,0.70]],
-        // India peninsula
-        [[1.30,0.50],[1.45,0.40],[1.50,0.20],[1.40,0.10],[1.30,0.30]],
-        // SE Asia / Indonesia
-        [[1.85,0.10],[2.10,0.05],[2.30,-0.10],[2.35,-0.20],[2.10,-0.20],[1.90,-0.05]],
-        // Australia
-        [[2.30,-0.30],[2.60,-0.32],[2.75,-0.45],[2.70,-0.62],[2.45,-0.65],[2.30,-0.55]],
-        // Greenland
-        [[-0.80,1.30],[-0.55,1.35],[-0.35,1.30],[-0.45,1.15],[-0.70,1.15]]
+      // === CONTINENT OUTLINES (real-world degrees lon/lat, converted to radians) ===
+      const D2R = Math.PI / 180;
+      const continentsDeg = [
+        { c: 'land', pts: [
+          // North America (Alaska -> Canada -> US -> Mexico -> Central America)
+          [-165,65],[-160,68],[-141,70],[-125,70],[-110,73],[-95,73],[-80,73],[-72,67],
+          [-60,60],[-55,52],[-58,47],[-65,45],[-70,42],[-75,37],[-79,33],[-81,25],
+          [-83,28],[-87,30],[-92,29],[-95,28],[-97,26],[-104,22],[-106,28],[-110,29],
+          [-117,32],[-122,37],[-124,42],[-127,49],[-135,55],[-150,59],[-160,60]
+        ]},
+        { c: 'land', pts: [
+          // South America
+          [-78,12],[-70,12],[-60,10],[-52,5],[-50,0],[-44,-2],[-38,-8],[-35,-9],
+          [-39,-15],[-40,-22],[-44,-23],[-48,-26],[-55,-35],[-58,-39],[-65,-45],
+          [-68,-52],[-70,-55],[-73,-52],[-74,-45],[-72,-38],[-72,-30],[-71,-18],
+          [-78,-8],[-81,-5],[-80,1],[-78,8]
+        ]},
+        { c: 'land', pts: [
+          // Africa
+          [-17,21],[-12,28],[-5,36],[10,37],[20,32],[30,31],[34,31],[37,16],
+          [42,12],[51,12],[51,8],[48,1],[42,-2],[40,-8],[40,-15],[40,-22],
+          [33,-28],[28,-34],[19,-34],[14,-23],[10,-15],[8,-5],[3,5],[-5,5],
+          [-9,11],[-15,12],[-16,15],[-17,18]
+        ]},
+        { c: 'land', pts: [
+          // Eurasia (Europe + Asia in one big landmass)
+          [-9,38],[-9,43],[-3,48],[2,49],[5,52],[3,52],[4,55],[8,57],[12,56],
+          [11,58],[18,69],[25,71],[30,70],[40,68],[55,72],[80,73],[105,73],
+          [130,72],[150,73],[170,68],[178,67],[170,60],[160,55],[150,50],
+          [140,42],[140,35],[130,33],[121,38],[120,28],[112,22],[108,18],
+          [105,11],[103,1],[100,5],[95,16],[92,21],[78,8],[76,10],[72,18],
+          [68,23],[60,25],[58,22],[55,25],[50,28],[44,30],[36,36],[28,36],
+          [20,40],[14,38],[10,36],[2,36],[-5,36],[-9,38]
+        ]},
+        { c: 'land', pts: [
+          // Australia
+          [113,-22],[114,-26],[115,-31],[120,-34],[130,-32],[136,-35],[140,-38],
+          [146,-39],[150,-37],[153,-28],[148,-20],[143,-13],[136,-12],[130,-12],
+          [125,-14],[122,-17],[114,-21]
+        ]},
+        { c: 'land', pts: [
+          // Greenland
+          [-55,60],[-45,60],[-37,65],[-22,68],[-18,75],[-25,82],[-50,82],[-58,75],[-60,68]
+        ]},
+        { c: 'land', pts: [
+          // Madagascar
+          [44,-12],[50,-15],[50,-22],[47,-25],[44,-23],[43,-18]
+        ]},
+        { c: 'land', pts: [
+          // Indonesia (Sumatra/Borneo simplified)
+          [95,5],[103,5],[110,4],[117,7],[120,1],[118,-3],[110,-6],[100,-3],[97,0]
+        ]},
+        { c: 'land', pts: [
+          // British Isles
+          [-10,50],[-6,55],[-5,58],[-3,60],[1,60],[1,52],[-2,51],[-6,50]
+        ]},
+        { c: 'land', pts: [
+          // Japan
+          [130,32],[136,35],[140,40],[142,44],[145,45],[143,42],[138,36],[133,33]
+        ]}
       ];
+
+      // Convert to radians and pre-compute static 3D positions
+      const continents = continentsDeg.map(c => ({
+        color: c.c,
+        verts3d: c.pts.map(([lon, lat]) => lonLatToXYZ(lon * D2R, lat * D2R))
+      }));
+
+      // === CLOUDS (random points on slightly larger sphere) ===
+      const clouds = [];
+      const CLOUD_R = R * 1.015; // just above surface
+      for (let i = 0; i < 28; i++) {
+        const u = Math.random(), v = Math.random();
+        const phi = Math.acos(2 * v - 1);
+        const theta = 2 * Math.PI * u;
+        clouds.push({
+          x: CLOUD_R * Math.sin(phi) * Math.cos(theta),
+          y: CLOUD_R * Math.cos(phi),
+          z: CLOUD_R * Math.sin(phi) * Math.sin(theta),
+          r: 18 + Math.random() * 28
+        });
+      }
 
       // Convert (lon, lat) -> 3D unit vector, then scale by R
       function lonLatToXYZ(lon, lat) {
@@ -1196,44 +1256,75 @@
         const tiltA = -0.25;
         const cT = Math.cos(tiltA), sT = Math.sin(tiltA);
 
+        function transformPt(p) {
+          const x1 =  p.x * cR + p.z * sR;
+          const z1 = -p.x * sR + p.z * cR;
+          const y2 = p.y * cT - z1 * sT;
+          const z2 = p.y * sT + z1 * cT;
+          const pr = project(x1, y2, z2);
+          return { sx: pr.sx, sy: pr.sy, z: z2, x3: x1, y3: y2 };
+        }
+
         ctx.save();
         ctx.beginPath(); ctx.arc(cx, cy, R - 1, 0, Math.PI * 2); ctx.clip();
 
         for (const cont of continents) {
-          // Transform vertices: rotate Y, tilt X, project
-          const verts = cont.map(([lon, lat]) => {
-            const p = lonLatToXYZ(lon, lat);
-            // Y-rotate
-            const x1 =  p.x * cR + p.z * sR;
-            const z1 = -p.x * sR + p.z * cR;
-            // X-tilt
-            const y2 = p.y * cT - z1 * sT;
-            const z2 = p.y * sT + z1 * cT;
-            const pr = project(x1, y2, z2);
-            return { sx: pr.sx, sy: pr.sy, z: z2 };
-          });
+          const verts = cont.verts3d.map(transformPt);
 
-          // Skip continents fully on far side (avg z > some threshold means behind)
+          // Skip continents fully on far side
           const avgZ = verts.reduce((s, v) => s + v.z, 0) / verts.length;
-          if (avgZ > R * 0.4) continue; // mostly hidden
+          if (avgZ > R * 0.55) continue;
 
-          // Depth-based opacity (front = bright, edge = dim)
+          // Depth-based shading (front bright, edge dim)
           const depth = Math.max(0, (R - avgZ) / (2 * R));
-          const opacity = Math.min(1, depth * 1.2) * 0.55;
+          const opacity = Math.min(1, depth * 1.4);
 
-          // Fill continent
+          // Land color varies subtly: greener near equator, browner near poles
+          const avgLat = verts.reduce((s, v) => s + Math.asin(-v.y3 / R), 0) / verts.length;
+          const absLat = Math.abs(avgLat);
+          // Mix: equator = green, mid = green-yellow, polar = white-ish
+          let r0, g0, b0;
+          if (absLat > 1.15) { // near poles → icy
+            r0 = 230; g0 = 235; b0 = 230;
+          } else if (absLat > 0.85) { // tundra → tan/brown
+            r0 = 150; g0 = 145; b0 = 105;
+          } else if (absLat > 0.45) { // temperate → green
+            r0 = 95; g0 = 145; b0 = 85;
+          } else { // tropical → vivid green
+            r0 = 80; g0 = 155; b0 = 75;
+          }
+          // Apply lighting (depth)
+          const lr = Math.round(r0 * (0.55 + depth * 0.45));
+          const lg = Math.round(g0 * (0.55 + depth * 0.45));
+          const lb = Math.round(b0 * (0.55 + depth * 0.45));
+
           ctx.beginPath();
           verts.forEach((v, idx) => {
             if (idx === 0) ctx.moveTo(v.sx, v.sy);
             else ctx.lineTo(v.sx, v.sy);
           });
           ctx.closePath();
-          ctx.fillStyle = `rgba(95,165,110,${opacity})`;
+          ctx.fillStyle = `rgba(${lr},${lg},${lb},${0.78 * opacity})`;
           ctx.fill();
-          // subtle darker edge
-          ctx.strokeStyle = `rgba(60,120,80,${opacity * 0.6})`;
-          ctx.lineWidth = 0.8;
-          ctx.stroke();
+        }
+
+        // === CLOUDS (rotate slower than the planet) ===
+        const cloudAngle = frame * 0.0009;
+        const ccR = Math.cos(cloudAngle), csR = Math.sin(cloudAngle);
+        for (const cl of clouds) {
+          const x1 =  cl.x * ccR + cl.z * csR;
+          const z1 = -cl.x * csR + cl.z * ccR;
+          const y2 = cl.y * cT - z1 * sT;
+          const z2 = cl.y * sT + z1 * cT;
+          if (z2 > R * 0.3) continue; // back side
+          const pr = project(x1, y2, z2);
+          const depth = Math.max(0, (R - z2) / (2 * R));
+          const g = ctx.createRadialGradient(pr.sx, pr.sy, 0, pr.sx, pr.sy, cl.r * pr.scale);
+          g.addColorStop(0, `rgba(255,255,255,${0.35 * depth})`);
+          g.addColorStop(0.6, `rgba(255,255,255,${0.12 * depth})`);
+          g.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.beginPath(); ctx.arc(pr.sx, pr.sy, cl.r * pr.scale, 0, Math.PI * 2);
+          ctx.fillStyle = g; ctx.fill();
         }
         ctx.restore();
 
