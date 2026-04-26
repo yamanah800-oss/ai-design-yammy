@@ -301,7 +301,8 @@
     }
     .course-card:hover { border-color: var(--primary); box-shadow: var(--shadow-lg); transform: translateY(-4px); }
     .course-img {
-      width: 100%; height: auto; display: block;
+      width: 100% !important; height: auto !important; display: block;
+      aspect-ratio: 4 / 3; object-fit: contain;
     }
     /* Styled banners for new courses without image files */
     /* ===== COURSE BANNERS ===== */
@@ -789,7 +790,7 @@
 
       <div class="courses-grid fade-in">
         <div class="course-card">
-          <img src="course1.jpg?v=2" alt="AIでスライド爆速 90分でプロ品質" class="course-img">
+          <img src="course1.jpg?v=3" alt="AIでスライド爆速 90分でプロ品質" class="course-img">
           <div class="course-header">
             <span class="course-tag">人気 No.1</span>
             <h3>プレゼン・資料作成：<br>Gemini, NotebookLM スライド爆速</h3>
@@ -810,7 +811,7 @@
         </div>
 
         <div class="course-card">
-          <img src="course2.png?v=2" alt="経営者のためのGoogle AI戦略講座" class="course-img">
+          <img src="course2.png?v=3" alt="経営者のためのGoogle AI戦略講座" class="course-img">
           <div class="course-header">
             <span class="course-tag new">New</span>
             <h3>経営者のためのGoogle AI戦略講座：<br>ベテランの知恵 &rarr; 知的財産</h3>
@@ -831,7 +832,7 @@
         </div>
 
         <div class="course-card">
-          <img src="course3.jpg" alt="Claudeの主要機能を90分で体験" class="course-img">
+          <img src="course3.jpg?v=3" alt="Claudeの主要機能を90分で体験" class="course-img">
           <div class="course-header">
             <span class="course-tag new">New</span>
             <h3>Claude主要機能を90分で体験<br>チャットだけで終わらないAI活用</h3>
@@ -852,7 +853,7 @@
         </div>
 
         <div class="course-card">
-          <img src="course4.png" alt="NanoBanana実践編 業種別で使える画像を量産" class="course-img">
+          <img src="course4.png?v=3" alt="NanoBanana実践編 業種別で使える画像を量産" class="course-img">
           <div class="course-header">
             <span class="course-tag new">New</span>
             <h3>NanoBanana 実践編🍌<br>あなたの業種で"使える画像"を量産する</h3>
