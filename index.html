@@ -1114,6 +1114,39 @@
         return { sx: cx + x * scale, sy: cy + y * scale, scale, z };
       }
 
+      // === CONTINENT OUTLINES (longitude, latitude in radians) ===
+      // Rough simplified shapes of major landmasses
+      const continents = [
+        // North America
+        [[-2.10,1.10],[-1.75,1.18],[-1.40,1.05],[-1.20,0.75],[-1.30,0.45],[-1.55,0.30],[-1.75,0.40],[-1.95,0.55],[-2.15,0.85]],
+        // South America
+        [[-1.25,0.20],[-1.05,0.05],[-0.95,-0.30],[-1.05,-0.75],[-1.20,-0.95],[-1.35,-0.70],[-1.40,-0.30],[-1.35,0.05]],
+        // Europe + North Africa
+        [[-0.10,0.95],[0.25,1.00],[0.55,0.85],[0.65,0.55],[0.55,0.20],[0.35,0.05],[0.10,-0.10],[-0.15,0.05],[-0.20,0.40],[-0.20,0.75]],
+        // Africa (south)
+        [[0.10,-0.05],[0.55,-0.05],[0.70,-0.30],[0.65,-0.55],[0.45,-0.75],[0.20,-0.65],[0.05,-0.40]],
+        // Asia
+        [[0.65,1.10],[1.20,1.20],[1.85,1.05],[2.20,0.85],[2.30,0.55],[2.10,0.30],[1.65,0.20],[1.10,0.25],[0.80,0.40],[0.65,0.70]],
+        // India peninsula
+        [[1.30,0.50],[1.45,0.40],[1.50,0.20],[1.40,0.10],[1.30,0.30]],
+        // SE Asia / Indonesia
+        [[1.85,0.10],[2.10,0.05],[2.30,-0.10],[2.35,-0.20],[2.10,-0.20],[1.90,-0.05]],
+        // Australia
+        [[2.30,-0.30],[2.60,-0.32],[2.75,-0.45],[2.70,-0.62],[2.45,-0.65],[2.30,-0.55]],
+        // Greenland
+        [[-0.80,1.30],[-0.55,1.35],[-0.35,1.30],[-0.45,1.15],[-0.70,1.15]]
+      ];
+
+      // Convert (lon, lat) -> 3D unit vector, then scale by R
+      function lonLatToXYZ(lon, lat) {
+        const cl = Math.cos(lat);
+        return {
+          x: R * cl * Math.sin(lon),
+          y: -R * Math.sin(lat),
+          z: R * cl * Math.cos(lon)
+        };
+      }
+
       let frame = 0;
       function draw() {
         frame++;
@@ -1157,14 +1190,51 @@
         sph.addColorStop(1,   'rgba(8,22,82,1)');
         ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fillStyle = sph; ctx.fill();
 
-        // --- Soft green continent hint (off-center, lit side) ---
-        const greenHint = ctx.createRadialGradient(cx - R * .18, cy - R * .08, 0, cx - R * .18, cy - R * .08, R * .55);
-        greenHint.addColorStop(0, 'rgba(120,200,150,.22)');
-        greenHint.addColorStop(.6, 'rgba(120,200,150,.06)');
-        greenHint.addColorStop(1, 'rgba(120,200,150,0)');
+        // === CONTINENTS (rotated with the sphere) ===
+        const rotAngle = frame * 0.0014;
+        const cR = Math.cos(rotAngle), sR = Math.sin(rotAngle);
+        const tiltA = -0.25;
+        const cT = Math.cos(tiltA), sT = Math.sin(tiltA);
+
         ctx.save();
-        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
-        ctx.fillStyle = greenHint; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+        ctx.beginPath(); ctx.arc(cx, cy, R - 1, 0, Math.PI * 2); ctx.clip();
+
+        for (const cont of continents) {
+          // Transform vertices: rotate Y, tilt X, project
+          const verts = cont.map(([lon, lat]) => {
+            const p = lonLatToXYZ(lon, lat);
+            // Y-rotate
+            const x1 =  p.x * cR + p.z * sR;
+            const z1 = -p.x * sR + p.z * cR;
+            // X-tilt
+            const y2 = p.y * cT - z1 * sT;
+            const z2 = p.y * sT + z1 * cT;
+            const pr = project(x1, y2, z2);
+            return { sx: pr.sx, sy: pr.sy, z: z2 };
+          });
+
+          // Skip continents fully on far side (avg z > some threshold means behind)
+          const avgZ = verts.reduce((s, v) => s + v.z, 0) / verts.length;
+          if (avgZ > R * 0.4) continue; // mostly hidden
+
+          // Depth-based opacity (front = bright, edge = dim)
+          const depth = Math.max(0, (R - avgZ) / (2 * R));
+          const opacity = Math.min(1, depth * 1.2) * 0.55;
+
+          // Fill continent
+          ctx.beginPath();
+          verts.forEach((v, idx) => {
+            if (idx === 0) ctx.moveTo(v.sx, v.sy);
+            else ctx.lineTo(v.sx, v.sy);
+          });
+          ctx.closePath();
+          ctx.fillStyle = `rgba(95,165,110,${opacity})`;
+          ctx.fill();
+          // subtle darker edge
+          ctx.strokeStyle = `rgba(60,120,80,${opacity * 0.6})`;
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        }
         ctx.restore();
 
         // --- Inner atmospheric rim (lighter cyan band on the lit side) ---
