@@ -919,82 +919,129 @@
       ctx.scale(dpr, dpr);
       const cx = S/2, cy = S/2, R = 185;
 
-      // Generate nodes inside sphere
+      // Background network particles
+      const bgPts = Array.from({length:60}, () => ({
+        x: Math.random()*S, y: Math.random()*S,
+        vx: (Math.random()-.5)*.35, vy: (Math.random()-.5)*.35,
+        r: Math.random()*1.4+.4, a: Math.random()*.35+.08
+      }));
+
+      // Neural nodes inside sphere
       const nodes = [];
-      while (nodes.length < 170) {
-        const x = (Math.random()-0.5)*2*R*0.95;
-        const y = (Math.random()-0.5)*2*R*0.88;
-        if (x*x/(R*R) + y*y/(R*0.88*R*0.88) < 0.92) {
-          nodes.push({ x: cx+x, y: cy+y, phase: Math.random()*Math.PI*2 });
-        }
+      while (nodes.length < 180) {
+        const x=(Math.random()-.5)*2*R*.95, y=(Math.random()-.5)*2*R*.88;
+        if (x*x/(R*R)+y*y/(R*.88*R*.88)<.91)
+          nodes.push({x:cx+x, y:cy+y, phase:Math.random()*Math.PI*2, r:Math.random()*1.2+.7});
       }
 
-      let t = 0;
-      function draw() {
-        t++;
-        ctx.clearRect(0, 0, S, S);
+      // Precompute edges
+      const edges=[];
+      for(let i=0;i<nodes.length;i++)
+        for(let j=i+1;j<nodes.length;j++){
+          const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
+          const d=Math.sqrt(dx*dx+dy*dy);
+          if(d<64) edges.push({i,j,d});
+        }
 
-        // Outer glow rings
-        [1.35, 1.18, 1.05].forEach((m, i) => {
-          const g = ctx.createRadialGradient(cx, cy, R*0.7, cx, cy, R*m);
-          g.addColorStop(0, `rgba(80,140,255,${0.07-i*0.02})`);
-          g.addColorStop(1, 'rgba(80,140,255,0)');
-          ctx.beginPath(); ctx.arc(cx, cy, R*m, 0, Math.PI*2);
-          ctx.fillStyle = g; ctx.fill();
-        });
+      // Traveling light pulses along edges
+      const pulses=[];
+      function spawnPulse(){
+        if(pulses.length>25||edges.length===0) return;
+        const e=edges[Math.floor(Math.random()*edges.length)];
+        pulses.push({e, t:0, spd:.012+Math.random()*.01});
+      }
 
-        // Sphere base
-        const sph = ctx.createRadialGradient(cx-R*0.28, cy-R*0.22, R*0.02, cx, cy, R);
-        sph.addColorStop(0,   'rgba(190,215,255,0.60)');
-        sph.addColorStop(0.25,'rgba(90,130,230,0.78)');
-        sph.addColorStop(0.6, 'rgba(55,80,200,0.86)');
-        sph.addColorStop(1,   'rgba(20,35,140,0.93)');
-        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2);
-        ctx.fillStyle = sph; ctx.fill();
+      let frame=0;
+      function draw(){
+        frame++;
+        ctx.clearRect(0,0,S,S);
 
-        // Clip interior for network
-        ctx.save();
-        ctx.beginPath(); ctx.arc(cx, cy, R-1, 0, Math.PI*2); ctx.clip();
-
-        // Connections
-        for (let i = 0; i < nodes.length; i++) {
-          for (let j = i+1; j < nodes.length; j++) {
-            const dx = nodes[i].x-nodes[j].x, dy = nodes[i].y-nodes[j].y;
-            const d = Math.sqrt(dx*dx+dy*dy);
-            if (d < 62) {
-              const pulse = Math.sin(t*0.035 + nodes[i].phase)*0.5+0.5;
-              const a = (1-d/62)*0.4*(0.45+pulse*0.55);
-              ctx.beginPath();
-              ctx.moveTo(nodes[i].x, nodes[i].y);
-              ctx.lineTo(nodes[j].x, nodes[j].y);
-              ctx.strokeStyle = `rgba(160,215,255,${a})`;
-              ctx.lineWidth = 0.55; ctx.stroke();
+        // --- Background network ---
+        for(const p of bgPts){
+          p.x+=p.vx; p.y+=p.vy;
+          if(p.x<0)p.x=S; if(p.x>S)p.x=0;
+          if(p.y<0)p.y=S; if(p.y>S)p.y=0;
+        }
+        for(let i=0;i<bgPts.length;i++)
+          for(let j=i+1;j<bgPts.length;j++){
+            const dx=bgPts[i].x-bgPts[j].x, dy=bgPts[i].y-bgPts[j].y;
+            const d=Math.sqrt(dx*dx+dy*dy);
+            if(d<95){
+              ctx.beginPath(); ctx.moveTo(bgPts[i].x,bgPts[i].y); ctx.lineTo(bgPts[j].x,bgPts[j].y);
+              ctx.strokeStyle=`rgba(140,180,255,${(1-d/95)*.10})`; ctx.lineWidth=.5; ctx.stroke();
             }
           }
+        for(const p of bgPts){
+          ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+          ctx.fillStyle=`rgba(160,200,255,${p.a})`; ctx.fill();
+        }
+
+        // --- Outer glow ---
+        [1.38,1.22,1.08].forEach((m,i)=>{
+          const g=ctx.createRadialGradient(cx,cy,R*.65,cx,cy,R*m);
+          g.addColorStop(0,`rgba(70,130,255,${.10-i*.025})`);
+          g.addColorStop(1,'rgba(70,130,255,0)');
+          ctx.beginPath(); ctx.arc(cx,cy,R*m,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+        });
+
+        // --- Sphere ---
+        const sph=ctx.createRadialGradient(cx-R*.28,cy-R*.22,R*.03,cx,cy,R);
+        sph.addColorStop(0,'rgba(200,222,255,.65)');
+        sph.addColorStop(.22,'rgba(95,138,238,.82)');
+        sph.addColorStop(.58,'rgba(55,80,205,.90)');
+        sph.addColorStop(1,'rgba(16,28,138,.96)');
+        ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fillStyle=sph; ctx.fill();
+
+        // --- Neural network (clipped) ---
+        ctx.save();
+        ctx.beginPath(); ctx.arc(cx,cy,R-1,0,Math.PI*2); ctx.clip();
+
+        // Edges
+        for(const {i,j,d} of edges){
+          const p=Math.sin(frame*.033+nodes[i].phase)*.5+.5;
+          const a=(1-d/64)*.44*(.35+p*.65);
+          ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y);
+          ctx.strokeStyle=`rgba(155,215,255,${a})`; ctx.lineWidth=.55; ctx.stroke();
+        }
+
+        // Traveling pulses
+        if(frame%6===0) spawnPulse();
+        for(let k=pulses.length-1;k>=0;k--){
+          const p=pulses[k]; p.t+=p.spd;
+          if(p.t>=1){pulses.splice(k,1);continue;}
+          const nx=nodes[p.e.i].x+(nodes[p.e.j].x-nodes[p.e.i].x)*p.t;
+          const ny=nodes[p.e.i].y+(nodes[p.e.j].y-nodes[p.e.i].y)*p.t;
+          const gr=ctx.createRadialGradient(nx,ny,0,nx,ny,9);
+          gr.addColorStop(0,'rgba(210,245,255,.95)'); gr.addColorStop(1,'rgba(210,245,255,0)');
+          ctx.beginPath(); ctx.arc(nx,ny,9,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill();
+          ctx.beginPath(); ctx.arc(nx,ny,2.2,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.98)'; ctx.fill();
         }
 
         // Nodes
-        for (let i = 0; i < nodes.length; i++) {
-          const p = Math.sin(t*0.05+nodes[i].phase)*0.5+0.5;
-          ctx.beginPath(); ctx.arc(nodes[i].x, nodes[i].y, 1.4+p*1.1, 0, Math.PI*2);
-          ctx.fillStyle = `rgba(215,240,255,${0.5+p*0.45})`; ctx.fill();
+        for(let i=0;i<nodes.length;i++){
+          const p=Math.sin(frame*.05+nodes[i].phase)*.5+.5;
+          const r=nodes[i].r+p*1.3;
+          if(r>1.8){
+            const g=ctx.createRadialGradient(nodes[i].x,nodes[i].y,0,nodes[i].x,nodes[i].y,r*4.5);
+            g.addColorStop(0,`rgba(200,238,255,${.28*p})`); g.addColorStop(1,'rgba(200,238,255,0)');
+            ctx.beginPath(); ctx.arc(nodes[i].x,nodes[i].y,r*4.5,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+          }
+          ctx.beginPath(); ctx.arc(nodes[i].x,nodes[i].y,r,0,Math.PI*2);
+          ctx.fillStyle=`rgba(215,242,255,${.48+p*.48})`; ctx.fill();
         }
         ctx.restore();
 
-        // Rim highlight
-        const rim = ctx.createLinearGradient(cx-R, cy-R, cx+R*0.4, cy+R*0.4);
-        rim.addColorStop(0, 'rgba(200,230,255,0.30)');
-        rim.addColorStop(1, 'rgba(200,230,255,0)');
-        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2);
-        ctx.strokeStyle = rim; ctx.lineWidth = 2.5; ctx.stroke();
+        // Rim
+        const rim=ctx.createLinearGradient(cx-R,cy-R,cx+R*.4,cy+R*.4);
+        rim.addColorStop(0,'rgba(215,238,255,.38)'); rim.addColorStop(1,'rgba(215,238,255,0)');
+        ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.strokeStyle=rim; ctx.lineWidth=2.8; ctx.stroke();
 
-        // "AI" text
-        ctx.font = `900 ${Math.round(R*0.46)}px "Inter","Noto Sans JP",sans-serif`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(140,200,255,0.9)'; ctx.shadowBlur = 28;
-        ctx.fillStyle = 'rgba(255,255,255,0.97)';
-        ctx.fillText('AI', cx, cy);
-        ctx.shadowBlur = 0;
+        // "AI"
+        const pulse=Math.sin(frame*.04)*.5+.5;
+        ctx.font=`900 ${Math.round(R*.46)}px "Inter",sans-serif`;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.shadowColor='rgba(130,200,255,.95)'; ctx.shadowBlur=26+pulse*14;
+        ctx.fillStyle='rgba(255,255,255,.97)'; ctx.fillText('AI',cx,cy); ctx.shadowBlur=0;
 
         requestAnimationFrame(draw);
       }
