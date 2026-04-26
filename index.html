@@ -1147,14 +1147,25 @@
           ctx.beginPath(); ctx.arc(cx, cy, R * m, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
         });
 
-        // --- Sphere body (Earth-like: ocean blue with sunlit highlight) ---
+        // --- Sphere body (Earth-like: ocean blue + subtle green highlight) ---
         const sph = ctx.createRadialGradient(cx - R * .32, cy - R * .28, R * .05, cx, cy, R);
-        sph.addColorStop(0,   'rgba(180,225,255,.78)');
-        sph.addColorStop(.18, 'rgba(80,160,230,.88)');
-        sph.addColorStop(.45, 'rgba(40,95,200,.94)');
-        sph.addColorStop(.78, 'rgba(20,50,150,.97)');
-        sph.addColorStop(1,   'rgba(8,20,80,1)');
+        sph.addColorStop(0,   'rgba(190,235,230,.80)');
+        sph.addColorStop(.15, 'rgba(110,200,180,.85)');
+        sph.addColorStop(.30, 'rgba(70,165,200,.90)');
+        sph.addColorStop(.50, 'rgba(40,110,205,.94)');
+        sph.addColorStop(.78, 'rgba(20,55,155,.97)');
+        sph.addColorStop(1,   'rgba(8,22,82,1)');
         ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fillStyle = sph; ctx.fill();
+
+        // --- Soft green continent hint (off-center, lit side) ---
+        const greenHint = ctx.createRadialGradient(cx - R * .18, cy - R * .08, 0, cx - R * .18, cy - R * .08, R * .55);
+        greenHint.addColorStop(0, 'rgba(120,200,150,.22)');
+        greenHint.addColorStop(.6, 'rgba(120,200,150,.06)');
+        greenHint.addColorStop(1, 'rgba(120,200,150,0)');
+        ctx.save();
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
+        ctx.fillStyle = greenHint; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+        ctx.restore();
 
         // --- Inner atmospheric rim (lighter cyan band on the lit side) ---
         const innerAtm = ctx.createRadialGradient(cx, cy, R * .82, cx, cy, R);
