@@ -246,7 +246,7 @@
     .ai-fc-gemini     { top: 195px; left: -5px;  animation: float-b 7s ease-in-out infinite; }
     .ai-fc-notebooklm { top: 30px;  right: 0px;  animation: float-c 5.5s ease-in-out infinite; }
     .ai-fc-chart      { bottom: 55px; left: 40px; animation: float-a 8s ease-in-out infinite 1s; }
-    .ai-fc-code       { bottom: 30px; right: 30px; animation: float-b 6.5s ease-in-out infinite 0.5s; }
+    .ai-fc-claude     { bottom: 30px; right: 20px; animation: float-b 6.5s ease-in-out infinite 0.5s; }
     @keyframes float-a { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
     @keyframes float-b { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
     @keyframes float-c { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-11px)} }
@@ -615,10 +615,10 @@
           <!-- NotebookLM card (top-right) -->
           <div class="ai-fc ai-fc-notebooklm">
             <div class="ai-fc-icon">
-              <svg viewBox="0 0 32 32" fill="none">
-                <path d="M4 16 Q4 4 16 4 Q28 4 28 16" stroke="#4fc3f7" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-                <path d="M7 19 Q7 10 16 10 Q25 10 25 19" stroke="#e040fb" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-                <path d="M10 22 Q10 16 16 16 Q22 16 22 22" stroke="#ff8a65" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+              <svg viewBox="0 0 52 38" fill="none">
+                <path d="M4 36 L4 19 Q4 3 26 3 Q48 3 48 19 L48 36" stroke="white" stroke-width="6.5" stroke-linecap="square"/>
+                <path d="M13 36 L13 23 Q13 14 26 14 Q39 14 39 23 L39 36" stroke="white" stroke-width="6.5" stroke-linecap="square"/>
+                <path d="M22 36 L22 27 Q22 23 26 23 Q30 23 30 27 L30 36" stroke="white" stroke-width="6.5" stroke-linecap="square"/>
               </svg>
             </div>
             NotebookLM
@@ -635,14 +635,18 @@
             </div>
           </div>
 
-          <!-- Code card (bottom-right) -->
-          <div class="ai-fc ai-fc-code">
-            <div class="ai-fc-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="16 18 22 12 16 6"/>
-                <polyline points="8 6 2 12 8 18"/>
+          <!-- Claude card (bottom-right) -->
+          <div class="ai-fc ai-fc-claude">
+            <div class="ai-fc-icon" style="background:linear-gradient(135deg,#c96442,#e8864e);">
+              <svg viewBox="0 0 40 40" fill="none">
+                <rect x="6"  y="19" width="28" height="4.2" rx="2.1" fill="white" transform="rotate(-40 20 20)"/>
+                <rect x="6"  y="19" width="28" height="4.2" rx="2.1" fill="white" transform="rotate(-20 20 20)"/>
+                <rect x="6"  y="19" width="28" height="4.2" rx="2.1" fill="white" transform="rotate(0   20 20)"/>
+                <rect x="6"  y="19" width="28" height="4.2" rx="2.1" fill="white" transform="rotate(20  20 20)"/>
+                <rect x="6"  y="19" width="28" height="4.2" rx="2.1" fill="white" transform="rotate(40  20 20)"/>
               </svg>
             </div>
+            Claude
           </div>
         </div>
       </div>
