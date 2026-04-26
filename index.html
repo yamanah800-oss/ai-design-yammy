@@ -301,7 +301,67 @@
     }
     .course-card:hover { border-color: var(--primary); box-shadow: var(--shadow-lg); transform: translateY(-4px); }
     .course-img {
-      width: 100%; height: 200px; display: block; object-fit: cover;
+      width: 100%; height: auto; display: block;
+    }
+    /* Styled banners for new courses without image files */
+    .course-banner {
+      width: 100%; position: relative; overflow: hidden;
+      display: flex; align-items: flex-end; min-height: 210px;
+    }
+    .course-banner-claude {
+      background: linear-gradient(150deg, #0f172a 0%, #1e1b4b 40%, #1e3a5f 100%);
+    }
+    .course-banner-claude::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 80% at 85% 50%, rgba(99,102,241,0.18) 0%, transparent 70%);
+    }
+    .course-banner-nano {
+      background: #111;
+      display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+      min-height: 210px;
+    }
+    .nano-cell {
+      position: relative; overflow: hidden;
+    }
+    .nano-cell-1 { background: linear-gradient(135deg, #c9a882 0%, #e8d5c0 100%); }
+    .nano-cell-2 { background: linear-gradient(135deg, #f5f0e4 0%, #ede8d5 100%); }
+    .nano-cell-3 { background: linear-gradient(135deg, #8b1a2e 0%, #c0334d 100%); }
+    .nano-cell-4 { background: linear-gradient(135deg, #d4e4d0 0%, #b8ccb4 100%); }
+    .nano-overlay {
+      position: absolute; inset: 0; z-index: 2;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      background: rgba(10,10,20,0.62);
+      padding: 20px;
+    }
+    .course-banner-content {
+      position: relative; z-index: 1;
+      padding: 24px 22px 20px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .course-banner-title {
+      font-size: 1.5rem; font-weight: 900; color: white;
+      line-height: 1.35; letter-spacing: -0.01em;
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+    }
+    .course-banner-title em {
+      font-style: normal; color: #fb923c;
+    }
+    .nano-overlay .course-banner-title {
+      font-size: 1.55rem; text-align: center; line-height: 1.3;
+    }
+    .course-banner-subtitle {
+      font-size: 0.88rem; color: rgba(255,255,255,0.75); font-weight: 500;
+    }
+    .nano-overlay .course-banner-subtitle {
+      text-align: center; font-size: 0.92rem; color: rgba(255,255,255,0.85);
+    }
+    .course-banner-badge {
+      display: inline-flex; align-items: center;
+      background: #f59e0b; color: white;
+      font-size: 0.75rem; font-weight: 700;
+      padding: 3px 10px; border-radius: 4px;
+      position: absolute; top: 12px; right: 14px; z-index: 3;
     }
     .course-header {
       padding: 24px 28px 16px; position: relative;
@@ -746,7 +806,13 @@
         </div>
 
         <div class="course-card">
-          <img src="course3.jpg" alt="Claudeの主要機能を90分で体験" class="course-img">
+          <div class="course-banner course-banner-claude">
+            <span class="course-banner-badge">オンライン</span>
+            <div class="course-banner-content">
+              <p class="course-banner-title">Claudeの<br>主要機能を<br><em>90分</em>で体験</p>
+              <p class="course-banner-subtitle">チャットだけで終わらないAI活用</p>
+            </div>
+          </div>
           <div class="course-header">
             <span class="course-tag new">New</span>
             <h3>Claude主要機能を90分で体験<br>チャットだけで終わらないAI活用</h3>
@@ -767,7 +833,17 @@
         </div>
 
         <div class="course-card">
-          <img src="course4.jpg" alt="NanoBanana実践編" class="course-img">
+          <div class="course-banner course-banner-nano">
+            <div class="nano-cell nano-cell-1"></div>
+            <div class="nano-cell nano-cell-2"></div>
+            <div class="nano-cell nano-cell-3"></div>
+            <div class="nano-cell nano-cell-4"></div>
+            <div class="nano-overlay">
+              <p class="course-banner-title">NanoBanana 実践編🍌</p>
+              <p class="course-banner-subtitle">業種別で使える画像を量産する</p>
+            </div>
+            <span class="course-banner-badge">オンライン</span>
+          </div>
           <div class="course-header">
             <span class="course-tag new">New</span>
             <h3>NanoBanana 実践編🍌<br>あなたの業種で"使える画像"を量産する</h3>
