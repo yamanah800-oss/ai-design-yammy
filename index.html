@@ -217,58 +217,39 @@
       0%, 100% { box-shadow: 0 0 60px rgba(99,102,241,0.45), 0 0 120px rgba(99,102,241,0.2), inset 0 -20px 40px rgba(0,0,0,0.2), inset 10px 10px 30px rgba(255,255,255,0.15); }
       50% { box-shadow: 0 0 80px rgba(99,102,241,0.55), 0 0 160px rgba(99,102,241,0.28), inset 0 -20px 40px rgba(0,0,0,0.2), inset 10px 10px 30px rgba(255,255,255,0.15); }
     }
-    .ai-ring {
-      position: absolute; top: 50%; left: 50%;
-      border-radius: 50%;
-      border: 1px solid rgba(99,102,241,0.13);
-      transform: translate(-50%, -54%);
+    /* ===== BRAIN CANVAS ===== */
+    #brain-canvas {
+      display: block;
+      width: 460px; height: 460px;
     }
-    .ai-ring-1 { width: 290px; height: 290px; }
-    .ai-ring-2 { width: 360px; height: 360px; border-color: rgba(59,130,246,0.08); }
-    .ai-ring-3 { width: 430px; height: 430px; border-color: rgba(99,102,241,0.05); }
-    /* Node dots on rings */
-    .ai-node {
-      position: absolute; border-radius: 50%;
-      background: rgba(99,102,241,0.3);
-    }
-    .ai-platform-shadow {
-      position: absolute; bottom: 28px; left: 50%;
-      transform: translateX(-50%);
-      width: 180px; height: 16px;
-      background: radial-gradient(ellipse at center, rgba(99,102,241,0.25) 0%, transparent 70%);
-      border-radius: 50%;
-    }
-    /* Floating AI Cards */
-    .ai-card {
+    /* Floating AI Cards - reference style */
+    .ai-fc {
       position: absolute;
-      background: white; border-radius: 14px;
-      padding: 9px 15px;
-      display: flex; align-items: center; gap: 8px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      font-weight: 700; font-size: 0.88rem; color: #1e293b;
-      white-space: nowrap;
+      background: rgba(8, 18, 70, 0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(100, 160, 255, 0.35);
+      border-radius: 18px;
+      padding: 14px 16px 12px;
+      display: flex; flex-direction: column; align-items: center; gap: 7px;
+      box-shadow: 0 8px 32px rgba(20, 60, 200, 0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+      color: white; font-size: 0.82rem; font-weight: 700;
+      min-width: 90px;
     }
-    .ai-card-icon {
-      width: 28px; height: 28px; border-radius: 7px;
+    .ai-fc-icon {
+      width: 46px; height: 46px; border-radius: 12px;
+      background: rgba(255,255,255,0.1);
       display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
     }
-    .ai-card-chatgpt { top: 52px; left: 4px; animation: float-a 6s ease-in-out infinite; }
-    .ai-card-gemini  { bottom: 90px; left: 6px; animation: float-b 7s ease-in-out infinite; }
-    .ai-card-notebooklm { top: 70px; right: 2px; animation: float-c 5.5s ease-in-out infinite; }
-    .ai-card-chart { bottom: 68px; right: 28px; animation: float-a 8s ease-in-out infinite 1s; }
-    @keyframes float-a {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
-    @keyframes float-b {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
-    @keyframes float-c {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
+    .ai-fc-icon svg { width: 28px; height: 28px; }
+    .ai-fc-chatgpt    { top: 18px;  left: 10px;  animation: float-a 6s ease-in-out infinite; }
+    .ai-fc-gemini     { top: 195px; left: -5px;  animation: float-b 7s ease-in-out infinite; }
+    .ai-fc-notebooklm { top: 30px;  right: 0px;  animation: float-c 5.5s ease-in-out infinite; }
+    .ai-fc-chart      { bottom: 55px; left: 40px; animation: float-a 8s ease-in-out infinite 1s; }
+    .ai-fc-claude     { bottom: 30px; right: 20px; animation: float-b 6.5s ease-in-out infinite 0.5s; }
+    @keyframes float-a { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+    @keyframes float-b { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    @keyframes float-c { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-11px)} }
 
     /* ===== SECTION COMMON ===== */
     section { padding: 100px 32px; }
@@ -606,60 +587,77 @@
         </div>
       </div>
 
-      <!-- Right column - AI Visual -->
+      <!-- Right column - AI Brain Visual -->
       <div class="hero-right">
         <div class="ai-visual">
-          <!-- Rings -->
-          <div class="ai-ring ai-ring-1"></div>
-          <div class="ai-ring ai-ring-2"></div>
-          <div class="ai-ring ai-ring-3"></div>
+          <canvas id="brain-canvas"></canvas>
 
-          <!-- Central sphere -->
-          <div class="ai-sphere-wrap">
-            <div class="ai-sphere"></div>
-            <div class="ai-sphere-text">AI</div>
-          </div>
-
-          <!-- Platform shadow -->
-          <div class="ai-platform-shadow"></div>
-
-          <!-- ChatGPT card -->
-          <div class="ai-card ai-card-chatgpt">
-            <div class="ai-card-icon" style="background:#10a37f;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.8956zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/>
+          <!-- ChatGPT card (top-left) -->
+          <div class="ai-fc ai-fc-chatgpt">
+            <div class="ai-fc-icon">
+              <svg viewBox="0 0 24 24" fill="white">
+                <path d="M22.28 9.82a5.98 5.98 0 00-.52-4.91 6.05 6.05 0 00-6.51-2.9A6.07 6.07 0 004.98 4.18a5.98 5.98 0 00-4 2.9 6.05 6.05 0 00.74 7.1 5.98 5.98 0 00.51 4.91 6.05 6.05 0 006.51 2.9A5.98 5.98 0 0013.26 24a6.06 6.06 0 005.77-4.21 5.99 5.99 0 004-2.9 6.06 6.06 0 00-.75-7.07zM13.26 22.5a4.48 4.48 0 01-2.88-1.04l.14-.08 4.78-2.76a.79.79 0 00.39-.68v-6.74l2.02 1.17a.07.07 0 01.04.05v5.58a4.5 4.5 0 01-4.49 4.5zm-9.66-4.13a4.47 4.47 0 01-.53-3.01l.14.08 4.78 2.76a.77.77 0 00.78 0l5.84-3.37v2.33a.08.08 0 01-.03.06L9.74 19.95a4.5 4.5 0 01-6.14-1.58zM2.34 7.9A4.49 4.49 0 014.7 5.92V11.6a.77.77 0 00.39.68l5.81 3.35-2.02 1.17a.08.08 0 01-.07 0L4.02 14.0A4.5 4.5 0 012.34 7.9zm16.6 3.86l-5.7-3.3 2.01-1.16a.08.08 0 01.07 0l4.83 2.79a4.49 4.49 0 01-.68 8.1v-5.68a.79.79 0 00-.52-.75zm2.01-3.02l-.14-.09-4.77-2.78a.78.78 0 00-.79 0L9.41 9.23V6.9a.07.07 0 01.03-.06l4.83-2.79a4.5 4.5 0 016.68 4.66zM8.31 12.86l-2.02-1.16a.08.08 0 01-.04-.06V6.07a4.5 4.5 0 017.38-3.45l-.14.08-4.78 2.76a.79.79 0 00-.4.68v6.72zm1.1-2.37l2.6-1.5 2.61 1.5v3l-2.6 1.5-2.61-1.5v-3z"/>
               </svg>
             </div>
             ChatGPT
           </div>
 
-          <!-- Gemini card -->
-          <div class="ai-card ai-card-gemini">
-            <div class="ai-card-icon" style="background: linear-gradient(135deg,#4285f4,#34a853);">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+          <!-- Gemini card (left-center) -->
+          <div class="ai-fc ai-fc-gemini">
+            <div class="ai-fc-icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C12 2 9.5 9.5 2 12C9.5 14.5 12 22 12 22C12 22 14.5 14.5 22 12C14.5 9.5 12 2 12 2Z" fill="white"/>
               </svg>
             </div>
             Gemini
           </div>
 
-          <!-- NotebookLM card -->
-          <div class="ai-card ai-card-notebooklm">
-            <div class="ai-card-icon" style="background: linear-gradient(135deg,#ff6b35,#f7931e,#4fc3f7);">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zm-1-11h2v6h-2zm0 8h2v2h-2z"/>
+          <!-- NotebookLM card (top-right) -->
+          <div class="ai-fc ai-fc-notebooklm">
+            <div class="ai-fc-icon">
+              <svg viewBox="0 0 32 20" fill="none">
+                <path d="M1 19 A15 15 0 0 1 31 19" stroke="#E8883D" stroke-width="3" stroke-linecap="round"/>
+                <path d="M6 19 A10 10 0 0 1 26 19" stroke="#5177FF" stroke-width="3" stroke-linecap="round"/>
+                <path d="M11 19 A5 5 0 0 1 21 19" stroke="#36BAA2" stroke-width="3" stroke-linecap="round"/>
               </svg>
             </div>
             NotebookLM
           </div>
 
-          <!-- Chart icon card -->
-          <div class="ai-card ai-card-chart">
-            <div class="ai-card-icon" style="background:#6366f1;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                <path d="M3 13h2v7H3v-7zm4-5h2v12H7V8zm4-4h2v16h-2V4zm4 8h2v8h-2v-8z"/>
+          <!-- Bar chart card (bottom-left) -->
+          <div class="ai-fc ai-fc-chart">
+            <div class="ai-fc-icon">
+              <svg viewBox="0 0 24 24" fill="white">
+                <rect x="2" y="10" width="4" height="11" rx="1"/>
+                <rect x="9" y="6" width="4" height="15" rx="1"/>
+                <rect x="16" y="2" width="4" height="19" rx="1"/>
               </svg>
             </div>
+          </div>
+
+          <!-- Claude card (bottom-right) -->
+          <div class="ai-fc ai-fc-claude">
+            <div class="ai-fc-icon" style="background:#cc6245;">
+              <svg viewBox="0 0 28 28">
+                <g transform="translate(14,14)" fill="white">
+                  <circle r="3"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3" transform="rotate(27.7)"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3" transform="rotate(55.4)"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3" transform="rotate(83.1)"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3" transform="rotate(110.8)"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3" transform="rotate(138.5)"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3" transform="rotate(166.2)"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3" transform="rotate(193.9)"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3" transform="rotate(221.6)"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3" transform="rotate(249.3)"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3" transform="rotate(277)"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3" transform="rotate(304.7)"/>
+                  <rect x="-1.3" y="-13" width="2.6" height="10.5" rx="1.3" transform="rotate(332.4)"/>
+                </g>
+              </svg>
+            </div>
+            Claude
           </div>
         </div>
       </div>
@@ -923,6 +921,147 @@
     document.querySelectorAll('nav a').forEach(link => {
       link.addEventListener('click', () => document.getElementById('nav').classList.remove('active'));
     });
+
+    // ===== BRAIN CANVAS =====
+    (function() {
+      const canvas = document.getElementById('brain-canvas');
+      if (!canvas) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const S = 460;
+      canvas.width = S * dpr; canvas.height = S * dpr;
+      canvas.style.width = S + 'px'; canvas.style.height = S + 'px';
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      const cx = S/2, cy = S/2, R = 185;
+
+      // Background network particles
+      const bgPts = Array.from({length:60}, () => ({
+        x: Math.random()*S, y: Math.random()*S,
+        vx: (Math.random()-.5)*.35, vy: (Math.random()-.5)*.35,
+        r: Math.random()*1.4+.4, a: Math.random()*.35+.08
+      }));
+
+      // Neural nodes inside sphere
+      const nodes = [];
+      while (nodes.length < 180) {
+        const x=(Math.random()-.5)*2*R*.95, y=(Math.random()-.5)*2*R*.88;
+        if (x*x/(R*R)+y*y/(R*.88*R*.88)<.91)
+          nodes.push({x:cx+x, y:cy+y, phase:Math.random()*Math.PI*2, r:Math.random()*1.2+.7});
+      }
+
+      // Precompute edges
+      const edges=[];
+      for(let i=0;i<nodes.length;i++)
+        for(let j=i+1;j<nodes.length;j++){
+          const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
+          const d=Math.sqrt(dx*dx+dy*dy);
+          if(d<64) edges.push({i,j,d});
+        }
+
+      // Traveling light pulses along edges
+      const pulses=[];
+      function spawnPulse(){
+        if(pulses.length>25||edges.length===0) return;
+        const e=edges[Math.floor(Math.random()*edges.length)];
+        pulses.push({e, t:0, spd:.012+Math.random()*.01});
+      }
+
+      let frame=0;
+      function draw(){
+        frame++;
+        ctx.clearRect(0,0,S,S);
+
+        // --- Background network ---
+        for(const p of bgPts){
+          p.x+=p.vx; p.y+=p.vy;
+          if(p.x<0)p.x=S; if(p.x>S)p.x=0;
+          if(p.y<0)p.y=S; if(p.y>S)p.y=0;
+        }
+        for(let i=0;i<bgPts.length;i++)
+          for(let j=i+1;j<bgPts.length;j++){
+            const dx=bgPts[i].x-bgPts[j].x, dy=bgPts[i].y-bgPts[j].y;
+            const d=Math.sqrt(dx*dx+dy*dy);
+            if(d<95){
+              ctx.beginPath(); ctx.moveTo(bgPts[i].x,bgPts[i].y); ctx.lineTo(bgPts[j].x,bgPts[j].y);
+              ctx.strokeStyle=`rgba(140,180,255,${(1-d/95)*.10})`; ctx.lineWidth=.5; ctx.stroke();
+            }
+          }
+        for(const p of bgPts){
+          ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+          ctx.fillStyle=`rgba(160,200,255,${p.a})`; ctx.fill();
+        }
+
+        // --- Outer glow ---
+        [1.38,1.22,1.08].forEach((m,i)=>{
+          const g=ctx.createRadialGradient(cx,cy,R*.65,cx,cy,R*m);
+          g.addColorStop(0,`rgba(70,130,255,${.10-i*.025})`);
+          g.addColorStop(1,'rgba(70,130,255,0)');
+          ctx.beginPath(); ctx.arc(cx,cy,R*m,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+        });
+
+        // --- Sphere ---
+        const sph=ctx.createRadialGradient(cx-R*.28,cy-R*.22,R*.03,cx,cy,R);
+        sph.addColorStop(0,'rgba(200,222,255,.65)');
+        sph.addColorStop(.22,'rgba(95,138,238,.82)');
+        sph.addColorStop(.58,'rgba(55,80,205,.90)');
+        sph.addColorStop(1,'rgba(16,28,138,.96)');
+        ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fillStyle=sph; ctx.fill();
+
+        // --- Neural network (clipped) ---
+        ctx.save();
+        ctx.beginPath(); ctx.arc(cx,cy,R-1,0,Math.PI*2); ctx.clip();
+
+        // Edges
+        for(const {i,j,d} of edges){
+          const p=Math.sin(frame*.033+nodes[i].phase)*.5+.5;
+          const a=(1-d/64)*.44*(.35+p*.65);
+          ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y);
+          ctx.strokeStyle=`rgba(155,215,255,${a})`; ctx.lineWidth=.55; ctx.stroke();
+        }
+
+        // Traveling pulses
+        if(frame%6===0) spawnPulse();
+        for(let k=pulses.length-1;k>=0;k--){
+          const p=pulses[k]; p.t+=p.spd;
+          if(p.t>=1){pulses.splice(k,1);continue;}
+          const nx=nodes[p.e.i].x+(nodes[p.e.j].x-nodes[p.e.i].x)*p.t;
+          const ny=nodes[p.e.i].y+(nodes[p.e.j].y-nodes[p.e.i].y)*p.t;
+          const gr=ctx.createRadialGradient(nx,ny,0,nx,ny,9);
+          gr.addColorStop(0,'rgba(210,245,255,.95)'); gr.addColorStop(1,'rgba(210,245,255,0)');
+          ctx.beginPath(); ctx.arc(nx,ny,9,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill();
+          ctx.beginPath(); ctx.arc(nx,ny,2.2,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.98)'; ctx.fill();
+        }
+
+        // Nodes
+        for(let i=0;i<nodes.length;i++){
+          const p=Math.sin(frame*.05+nodes[i].phase)*.5+.5;
+          const r=nodes[i].r+p*1.3;
+          if(r>1.8){
+            const g=ctx.createRadialGradient(nodes[i].x,nodes[i].y,0,nodes[i].x,nodes[i].y,r*4.5);
+            g.addColorStop(0,`rgba(200,238,255,${.28*p})`); g.addColorStop(1,'rgba(200,238,255,0)');
+            ctx.beginPath(); ctx.arc(nodes[i].x,nodes[i].y,r*4.5,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+          }
+          ctx.beginPath(); ctx.arc(nodes[i].x,nodes[i].y,r,0,Math.PI*2);
+          ctx.fillStyle=`rgba(215,242,255,${.48+p*.48})`; ctx.fill();
+        }
+        ctx.restore();
+
+        // Rim
+        const rim=ctx.createLinearGradient(cx-R,cy-R,cx+R*.4,cy+R*.4);
+        rim.addColorStop(0,'rgba(215,238,255,.38)'); rim.addColorStop(1,'rgba(215,238,255,0)');
+        ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.strokeStyle=rim; ctx.lineWidth=2.8; ctx.stroke();
+
+        // "AI"
+        const pulse=Math.sin(frame*.04)*.5+.5;
+        ctx.font=`900 ${Math.round(R*.46)}px "Inter",sans-serif`;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.shadowColor='rgba(130,200,255,.95)'; ctx.shadowBlur=26+pulse*14;
+        ctx.fillStyle='rgba(255,255,255,.97)'; ctx.fillText('AI',cx,cy); ctx.shadowBlur=0;
+
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
 
     // ===== SCROLL FADE-IN =====
     const observer = new IntersectionObserver((entries) => {
