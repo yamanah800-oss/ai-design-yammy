@@ -221,14 +221,6 @@
     #brain-canvas {
       display: block;
       width: 460px; height: 460px;
-      animation: brain-rotate 18s linear infinite;
-      transform-origin: center center;
-      transform-style: preserve-3d;
-    }
-    .ai-visual { perspective: 1200px; }
-    @keyframes brain-rotate {
-      from { transform: rotateY(0deg); }
-      to { transform: rotateY(360deg); }
     }
     /* Floating AI Cards - reference style */
     .ai-fc {
@@ -1060,7 +1052,7 @@
       link.addEventListener('click', () => document.getElementById('nav').classList.remove('active'));
     });
 
-    // ===== BRAIN CANVAS =====
+    // ===== BRAIN CANVAS — 3D ROTATING GLOBE =====
     (function() {
       const canvas = document.getElementById('brain-canvas');
       if (!canvas) return;
@@ -1071,130 +1063,183 @@
       const ctx = canvas.getContext('2d');
       ctx.scale(dpr, dpr);
       const cx = S/2, cy = S/2, R = 185;
+      const FOCAL = 600; // perspective focal length
 
-      // Background network particles
+      // Background network particles (2D, behind sphere)
       const bgPts = Array.from({length:60}, () => ({
         x: Math.random()*S, y: Math.random()*S,
         vx: (Math.random()-.5)*.35, vy: (Math.random()-.5)*.35,
         r: Math.random()*1.4+.4, a: Math.random()*.35+.08
       }));
 
-      // Neural nodes inside sphere
+      // Neural nodes ON SPHERE SURFACE (3D)
+      const N = 220;
       const nodes = [];
-      while (nodes.length < 180) {
-        const x=(Math.random()-.5)*2*R*.95, y=(Math.random()-.5)*2*R*.88;
-        if (x*x/(R*R)+y*y/(R*.88*R*.88)<.91)
-          nodes.push({x:cx+x, y:cy+y, phase:Math.random()*Math.PI*2, r:Math.random()*1.2+.7});
+      for (let i = 0; i < N; i++) {
+        // Even distribution on sphere via golden-ratio Fibonacci sphere
+        const phi = Math.acos(1 - 2 * (i + 0.5) / N);
+        const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+        nodes.push({
+          x: R * Math.sin(phi) * Math.cos(theta),
+          y: R * Math.cos(phi),
+          z: R * Math.sin(phi) * Math.sin(theta),
+          phase: Math.random() * Math.PI * 2,
+          r: Math.random() * 1.0 + 0.7
+        });
       }
 
-      // Precompute edges
-      const edges=[];
-      for(let i=0;i<nodes.length;i++)
-        for(let j=i+1;j<nodes.length;j++){
-          const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
-          const d=Math.sqrt(dx*dx+dy*dy);
-          if(d<64) edges.push({i,j,d});
+      // Precompute edges (in 3D, by angular distance)
+      const edges = [];
+      const EDGE_DIST = 70;
+      for (let i = 0; i < nodes.length; i++)
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const dz = nodes[i].z - nodes[j].z;
+          const d = Math.sqrt(dx*dx + dy*dy + dz*dz);
+          if (d < EDGE_DIST) edges.push({ i, j, d });
         }
 
-      // Traveling light pulses along edges
-      const pulses=[];
-      function spawnPulse(){
-        if(pulses.length>25||edges.length===0) return;
-        const e=edges[Math.floor(Math.random()*edges.length)];
-        pulses.push({e, t:0, spd:.012+Math.random()*.01});
+      // Traveling pulses along edges
+      const pulses = [];
+      function spawnPulse() {
+        if (pulses.length > 25 || edges.length === 0) return;
+        const e = edges[Math.floor(Math.random() * edges.length)];
+        pulses.push({ e, t: 0, spd: 0.012 + Math.random() * 0.01 });
       }
 
-      let frame=0;
-      function draw(){
+      // Project a 3D point to 2D screen with perspective
+      function project(x, y, z) {
+        const scale = FOCAL / (FOCAL + z);
+        return { sx: cx + x * scale, sy: cy + y * scale, scale, z };
+      }
+
+      let frame = 0;
+      function draw() {
         frame++;
-        ctx.clearRect(0,0,S,S);
+        ctx.clearRect(0, 0, S, S);
 
         // --- Background network ---
-        for(const p of bgPts){
-          p.x+=p.vx; p.y+=p.vy;
-          if(p.x<0)p.x=S; if(p.x>S)p.x=0;
-          if(p.y<0)p.y=S; if(p.y>S)p.y=0;
+        for (const p of bgPts) {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0) p.x = S; if (p.x > S) p.x = 0;
+          if (p.y < 0) p.y = S; if (p.y > S) p.y = 0;
         }
-        for(let i=0;i<bgPts.length;i++)
-          for(let j=i+1;j<bgPts.length;j++){
-            const dx=bgPts[i].x-bgPts[j].x, dy=bgPts[i].y-bgPts[j].y;
-            const d=Math.sqrt(dx*dx+dy*dy);
-            if(d<95){
-              ctx.beginPath(); ctx.moveTo(bgPts[i].x,bgPts[i].y); ctx.lineTo(bgPts[j].x,bgPts[j].y);
-              ctx.strokeStyle=`rgba(140,180,255,${(1-d/95)*.10})`; ctx.lineWidth=.5; ctx.stroke();
+        for (let i = 0; i < bgPts.length; i++)
+          for (let j = i + 1; j < bgPts.length; j++) {
+            const dx = bgPts[i].x - bgPts[j].x, dy = bgPts[i].y - bgPts[j].y;
+            const d = Math.sqrt(dx*dx + dy*dy);
+            if (d < 95) {
+              ctx.beginPath(); ctx.moveTo(bgPts[i].x, bgPts[i].y); ctx.lineTo(bgPts[j].x, bgPts[j].y);
+              ctx.strokeStyle = `rgba(140,180,255,${(1 - d / 95) * .10})`; ctx.lineWidth = .5; ctx.stroke();
             }
           }
-        for(const p of bgPts){
-          ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-          ctx.fillStyle=`rgba(160,200,255,${p.a})`; ctx.fill();
+        for (const p of bgPts) {
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(160,200,255,${p.a})`; ctx.fill();
         }
 
         // --- Outer glow ---
-        [1.38,1.22,1.08].forEach((m,i)=>{
-          const g=ctx.createRadialGradient(cx,cy,R*.65,cx,cy,R*m);
-          g.addColorStop(0,`rgba(70,130,255,${.10-i*.025})`);
-          g.addColorStop(1,'rgba(70,130,255,0)');
-          ctx.beginPath(); ctx.arc(cx,cy,R*m,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+        [1.38, 1.22, 1.08].forEach((m, i) => {
+          const g = ctx.createRadialGradient(cx, cy, R * .65, cx, cy, R * m);
+          g.addColorStop(0, `rgba(70,130,255,${.10 - i * .025})`);
+          g.addColorStop(1, 'rgba(70,130,255,0)');
+          ctx.beginPath(); ctx.arc(cx, cy, R * m, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
         });
 
-        // --- Sphere ---
-        const sph=ctx.createRadialGradient(cx-R*.28,cy-R*.22,R*.03,cx,cy,R);
-        sph.addColorStop(0,'rgba(200,222,255,.65)');
-        sph.addColorStop(.22,'rgba(95,138,238,.82)');
-        sph.addColorStop(.58,'rgba(55,80,205,.90)');
-        sph.addColorStop(1,'rgba(16,28,138,.96)');
-        ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.fillStyle=sph; ctx.fill();
+        // --- Sphere body (lit from upper-left, fixed) ---
+        const sph = ctx.createRadialGradient(cx - R * .28, cy - R * .22, R * .03, cx, cy, R);
+        sph.addColorStop(0, 'rgba(200,222,255,.65)');
+        sph.addColorStop(.22, 'rgba(95,138,238,.82)');
+        sph.addColorStop(.58, 'rgba(55,80,205,.90)');
+        sph.addColorStop(1, 'rgba(16,28,138,.96)');
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fillStyle = sph; ctx.fill();
 
-        // --- Neural network (clipped) ---
+        // === ROTATE NODES (Y-axis rotation: like Earth spinning) ===
+        const angle = frame * 0.006; // rotation speed
+        const cosA = Math.cos(angle), sinA = Math.sin(angle);
+        const tilt = -0.25; // slight tilt for visual interest (like Earth's axis)
+        const cosT = Math.cos(tilt), sinT = Math.sin(tilt);
+
+        const proj = nodes.map(n => {
+          // Rotate around Y-axis
+          const x1 =  n.x * cosA + n.z * sinA;
+          const z1 = -n.x * sinA + n.z * cosA;
+          // Tilt around X-axis
+          const y2 = n.y * cosT - z1 * sinT;
+          const z2 = n.y * sinT + z1 * cosT;
+          const p = project(x1, y2, z2);
+          return { ...p, x3: x1, y3: y2, z3: z2, n };
+        });
+
+        // --- Neural network (clipped to sphere) ---
         ctx.save();
-        ctx.beginPath(); ctx.arc(cx,cy,R-1,0,Math.PI*2); ctx.clip();
+        ctx.beginPath(); ctx.arc(cx, cy, R - 1, 0, Math.PI * 2); ctx.clip();
 
-        // Edges
-        for(const {i,j,d} of edges){
-          const p=Math.sin(frame*.033+nodes[i].phase)*.5+.5;
-          const a=(1-d/64)*.44*(.35+p*.65);
-          ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y);
-          ctx.strokeStyle=`rgba(155,215,255,${a})`; ctx.lineWidth=.55; ctx.stroke();
+        // Edges (depth-faded)
+        for (const e of edges) {
+          const a = proj[e.i], b = proj[e.j];
+          // Average depth: -R (front) ... +R (back). Front is brighter.
+          const avgZ = (a.z3 + b.z3) * 0.5;
+          const depth = (R - avgZ) / (2 * R); // 0 (back) to 1 (front)
+          if (depth < 0.15) continue;
+          const phaseA = Math.sin(frame * .033 + a.n.phase) * .5 + .5;
+          const alpha = (1 - e.d / EDGE_DIST) * .55 * depth * (.35 + phaseA * .65);
+          ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy);
+          ctx.strokeStyle = `rgba(155,215,255,${alpha})`;
+          ctx.lineWidth = .55 * depth;
+          ctx.stroke();
         }
 
         // Traveling pulses
-        if(frame%6===0) spawnPulse();
-        for(let k=pulses.length-1;k>=0;k--){
-          const p=pulses[k]; p.t+=p.spd;
-          if(p.t>=1){pulses.splice(k,1);continue;}
-          const nx=nodes[p.e.i].x+(nodes[p.e.j].x-nodes[p.e.i].x)*p.t;
-          const ny=nodes[p.e.i].y+(nodes[p.e.j].y-nodes[p.e.i].y)*p.t;
-          const gr=ctx.createRadialGradient(nx,ny,0,nx,ny,9);
-          gr.addColorStop(0,'rgba(210,245,255,.95)'); gr.addColorStop(1,'rgba(210,245,255,0)');
-          ctx.beginPath(); ctx.arc(nx,ny,9,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill();
-          ctx.beginPath(); ctx.arc(nx,ny,2.2,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.98)'; ctx.fill();
+        if (frame % 6 === 0) spawnPulse();
+        for (let k = pulses.length - 1; k >= 0; k--) {
+          const p = pulses[k]; p.t += p.spd;
+          if (p.t >= 1) { pulses.splice(k, 1); continue; }
+          const a = proj[p.e.i], b = proj[p.e.j];
+          const nx = a.sx + (b.sx - a.sx) * p.t;
+          const ny = a.sy + (b.sy - a.sy) * p.t;
+          const avgZ = (a.z3 + b.z3) * .5;
+          const depth = (R - avgZ) / (2 * R);
+          if (depth < 0.2) continue;
+          const gr = ctx.createRadialGradient(nx, ny, 0, nx, ny, 9 * depth);
+          gr.addColorStop(0, `rgba(210,245,255,${.95 * depth})`); gr.addColorStop(1, 'rgba(210,245,255,0)');
+          ctx.beginPath(); ctx.arc(nx, ny, 9 * depth, 0, Math.PI * 2); ctx.fillStyle = gr; ctx.fill();
+          ctx.beginPath(); ctx.arc(nx, ny, 2.2 * depth, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${.98 * depth})`; ctx.fill();
         }
 
-        // Nodes
-        for(let i=0;i<nodes.length;i++){
-          const p=Math.sin(frame*.05+nodes[i].phase)*.5+.5;
-          const r=nodes[i].r+p*1.3;
-          if(r>1.8){
-            const g=ctx.createRadialGradient(nodes[i].x,nodes[i].y,0,nodes[i].x,nodes[i].y,r*4.5);
-            g.addColorStop(0,`rgba(200,238,255,${.28*p})`); g.addColorStop(1,'rgba(200,238,255,0)');
-            ctx.beginPath(); ctx.arc(nodes[i].x,nodes[i].y,r*4.5,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+        // Sort nodes back-to-front for proper rendering
+        const sorted = proj.slice().sort((a, b) => b.z3 - a.z3);
+
+        // Nodes (depth-shaded)
+        for (const p of sorted) {
+          const depth = (R - p.z3) / (2 * R); // 0 (back) to 1 (front)
+          if (depth < 0.1) continue;
+          const phaseA = Math.sin(frame * .05 + p.n.phase) * .5 + .5;
+          const r = (p.n.r + phaseA * 1.3) * depth;
+          if (r > 1.6) {
+            const g = ctx.createRadialGradient(p.sx, p.sy, 0, p.sx, p.sy, r * 4.5);
+            g.addColorStop(0, `rgba(200,238,255,${.28 * phaseA * depth})`);
+            g.addColorStop(1, 'rgba(200,238,255,0)');
+            ctx.beginPath(); ctx.arc(p.sx, p.sy, r * 4.5, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
           }
-          ctx.beginPath(); ctx.arc(nodes[i].x,nodes[i].y,r,0,Math.PI*2);
-          ctx.fillStyle=`rgba(215,242,255,${.48+p*.48})`; ctx.fill();
+          ctx.beginPath(); ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(215,242,255,${(.48 + phaseA * .48) * depth})`; ctx.fill();
         }
         ctx.restore();
 
-        // Rim
-        const rim=ctx.createLinearGradient(cx-R,cy-R,cx+R*.4,cy+R*.4);
-        rim.addColorStop(0,'rgba(215,238,255,.38)'); rim.addColorStop(1,'rgba(215,238,255,0)');
-        ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.strokeStyle=rim; ctx.lineWidth=2.8; ctx.stroke();
+        // Rim highlight
+        const rim = ctx.createLinearGradient(cx - R, cy - R, cx + R * .4, cy + R * .4);
+        rim.addColorStop(0, 'rgba(215,238,255,.38)'); rim.addColorStop(1, 'rgba(215,238,255,0)');
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.strokeStyle = rim; ctx.lineWidth = 2.8; ctx.stroke();
 
-        // "AI"
-        const pulse=Math.sin(frame*.04)*.5+.5;
-        ctx.font=`900 ${Math.round(R*.46)}px "Inter",sans-serif`;
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.shadowColor='rgba(130,200,255,.95)'; ctx.shadowBlur=26+pulse*14;
-        ctx.fillStyle='rgba(255,255,255,.97)'; ctx.fillText('AI',cx,cy); ctx.shadowBlur=0;
+        // "AI" label (fixed, doesn't rotate)
+        const pulse = Math.sin(frame * .04) * .5 + .5;
+        ctx.font = `900 ${Math.round(R * .46)}px "Inter",sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(130,200,255,.95)'; ctx.shadowBlur = 26 + pulse * 14;
+        ctx.fillStyle = 'rgba(255,255,255,.97)'; ctx.fillText('AI', cx, cy); ctx.shadowBlur = 0;
 
         requestAnimationFrame(draw);
       }
