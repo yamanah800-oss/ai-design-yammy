@@ -111,35 +111,46 @@
       pointer-events: none;
       z-index: 0;
     }
-    /* Faint hex / data-stream overlays animated via CSS */
-    .hero-data-streams {
+    /* ===== Shooting stars (diagonal streaks) ===== */
+    .hero-shooting-stars {
       position: absolute; inset: 0;
       pointer-events: none; z-index: 0; overflow: hidden;
-      opacity: 0.55;
     }
-    .data-stream {
+    .shooting-star {
       position: absolute;
-      width: 1px;
-      background: linear-gradient(180deg,
-        rgba(99,102,241,0) 0%,
-        rgba(99,102,241,0.45) 35%,
-        rgba(59,130,246,0.65) 50%,
-        rgba(99,102,241,0.45) 65%,
-        rgba(99,102,241,0) 100%);
-      animation: stream-fall linear infinite;
+      width: 180px; height: 2px;
+      background: linear-gradient(90deg,
+        rgba(255,255,255,0) 0%,
+        rgba(180,200,255,0.55) 40%,
+        rgba(255,255,255,0.95) 80%,
+        rgba(255,255,255,1) 100%);
+      border-radius: 999px;
+      filter: drop-shadow(0 0 6px rgba(180,200,255,0.85))
+              drop-shadow(0 0 14px rgba(120,150,255,0.5));
+      opacity: 0;
+      transform: rotate(-22deg);
+      animation: shoot linear infinite;
     }
-    .data-stream:nth-child(1) { left: 8%;  height: 120px; animation-duration: 6s;  animation-delay: 0s;   }
-    .data-stream:nth-child(2) { left: 22%; height: 90px;  animation-duration: 8s;  animation-delay: 1.5s; }
-    .data-stream:nth-child(3) { left: 38%; height: 140px; animation-duration: 7s;  animation-delay: 3s;   }
-    .data-stream:nth-child(4) { left: 55%; height: 110px; animation-duration: 9s;  animation-delay: 0.8s; }
-    .data-stream:nth-child(5) { left: 68%; height: 150px; animation-duration: 6.5s; animation-delay: 4s;  }
-    .data-stream:nth-child(6) { left: 84%; height: 100px; animation-duration: 7.5s; animation-delay: 2s;  }
-    .data-stream:nth-child(7) { left: 92%; height: 130px; animation-duration: 8.5s; animation-delay: 5s;  }
-    @keyframes stream-fall {
-      0%   { transform: translateY(-150px); opacity: 0; }
-      10%  { opacity: 1; }
-      90%  { opacity: 1; }
-      100% { transform: translateY(110vh); opacity: 0; }
+    /* Bright "head" of the shooting star */
+    .shooting-star::after {
+      content: '';
+      position: absolute; right: -4px; top: 50%;
+      width: 8px; height: 8px;
+      transform: translateY(-50%);
+      background: radial-gradient(circle, #fff 0%, rgba(180,200,255,0.85) 40%, transparent 75%);
+      border-radius: 50%;
+    }
+    .shooting-star:nth-child(1) { top: 10%; left: -200px; animation-duration: 4.5s; animation-delay: 0s;   }
+    .shooting-star:nth-child(2) { top: 28%; left: -200px; animation-duration: 6s;   animation-delay: 3s;   }
+    .shooting-star:nth-child(3) { top: 50%; left: -200px; animation-duration: 5.2s; animation-delay: 7s;   }
+    .shooting-star:nth-child(4) { top: 18%; left: -200px; animation-duration: 5.8s; animation-delay: 11s;  }
+    .shooting-star:nth-child(5) { top: 65%; left: -200px; animation-duration: 4.8s; animation-delay: 14s;  }
+    .shooting-star:nth-child(6) { top: 38%; left: -200px; animation-duration: 5.5s; animation-delay: 18s;  }
+    @keyframes shoot {
+      0%   { transform: translate(0, 0) rotate(-22deg); opacity: 0; }
+      8%   { opacity: 1; }
+      80%  { opacity: 1; }
+      100% { transform: translate(120vw, 50vh) rotate(-22deg); opacity: 0; }
     }
     /* Soft flowing aurora wave overlay (replaces dot pattern) */
     .hero-aurora {
@@ -748,14 +759,13 @@
   <section class="hero">
     <canvas id="hero-bg-canvas"></canvas>
     <div class="hero-aurora"></div>
-    <div class="hero-data-streams">
-      <div class="data-stream"></div>
-      <div class="data-stream"></div>
-      <div class="data-stream"></div>
-      <div class="data-stream"></div>
-      <div class="data-stream"></div>
-      <div class="data-stream"></div>
-      <div class="data-stream"></div>
+    <div class="hero-shooting-stars">
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star"></div>
     </div>
     <div class="hero-inner">
       <!-- Left column -->
@@ -1481,13 +1491,14 @@
       draw();
     })();
 
-    // ===== HERO BACKGROUND: AI Neural Mesh =====
+    // ===== HERO BACKGROUND: Constellations =====
     (function() {
       const canvas = document.getElementById('hero-bg-canvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       let W, H, dpr = window.devicePixelRatio || 1;
-      let nodes = [], pulses = [];
+      let bgStars = [];     // many tiny twinkling stars
+      let constellations = []; // arrays of bright stars connected by lines
 
       function resize() {
         const hero = canvas.parentElement;
@@ -1495,97 +1506,133 @@
         canvas.width = W * dpr; canvas.height = H * dpr;
         canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        initNodes();
+        initStars();
       }
-      function initNodes() {
-        nodes = [];
-        const density = Math.max(22, Math.floor((W * H) / 38000));
+
+      // Pre-defined constellation patterns (relative coords 0..1)
+      // Each pattern is a list of points + edges connecting them.
+      const PATTERNS = [
+        // Big-Dipper-like (北斗七星)
+        { pts: [[0,0],[0.10,0.04],[0.20,0.05],[0.32,0.10],[0.40,0.22],[0.34,0.30],[0.24,0.34]],
+          edges: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6]] },
+        // Triangle / W (Cassiopeia-like)
+        { pts: [[0,0.10],[0.10,0],[0.20,0.12],[0.30,0],[0.40,0.10]],
+          edges: [[0,1],[1,2],[2,3],[3,4]] },
+        // Small kite / diamond
+        { pts: [[0.10,0],[0,0.12],[0.10,0.26],[0.22,0.12]],
+          edges: [[0,1],[1,2],[2,3],[3,0]] },
+        // Hunter (Orion-like simplified)
+        { pts: [[0,0],[0.08,0.18],[0.16,0.36],[0.04,0.20],[0.12,0.20],[0.20,0.20],[0.10,0.40]],
+          edges: [[0,1],[1,2],[3,4],[4,5],[1,6]] }
+      ];
+
+      function initStars() {
+        // Tiny background stars
+        bgStars = [];
+        const density = Math.max(70, Math.floor((W * H) / 9000));
         for (let i = 0; i < density; i++) {
-          nodes.push({
+          bgStars.push({
             x: Math.random() * W,
             y: Math.random() * H,
-            vx: (Math.random() - 0.5) * 0.14,
-            vy: (Math.random() - 0.5) * 0.14,
-            r: Math.random() * 0.9 + 0.6,
-            phase: Math.random() * Math.PI * 2
+            r: Math.random() * 1.0 + 0.3,
+            base: 0.3 + Math.random() * 0.45,
+            tw: Math.random() * 0.04 + 0.01,
+            phase: Math.random() * Math.PI * 2,
+            // Some bg stars get a soft warm tint
+            tint: Math.random() < 0.18 ? 'warm' : (Math.random() < 0.18 ? 'cool' : 'white')
           });
         }
+        // Constellations: lay several patterns at random positions/scales
+        constellations = [];
+        const slots = [
+          { x: 0.06, y: 0.15, s: 220 },
+          { x: 0.55, y: 0.12, s: 260 },
+          { x: 0.18, y: 0.62, s: 240 },
+          { x: 0.62, y: 0.55, s: 220 }
+        ];
+        slots.forEach((slot, i) => {
+          const pat = PATTERNS[i % PATTERNS.length];
+          const ox = slot.x * W;
+          const oy = slot.y * H;
+          const sc = slot.s;
+          const stars = pat.pts.map(([px, py]) => ({
+            x: ox + px * sc,
+            y: oy + py * sc,
+            r: 1.6 + Math.random() * 1.4,
+            base: 0.7 + Math.random() * 0.25,
+            tw: 0.01 + Math.random() * 0.015,
+            phase: Math.random() * Math.PI * 2
+          }));
+          constellations.push({ stars, edges: pat.edges });
+        });
       }
-      const LINK_DIST = 170;
 
       let frame = 0;
-      function spawnPulse() {
-        if (pulses.length > 12) return;
-        // pick a random node, then a near neighbor
-        const a = nodes[Math.floor(Math.random() * nodes.length)];
-        let best = null, bestD = LINK_DIST;
-        for (const b of nodes) {
-          if (b === a) continue;
-          const d = Math.hypot(a.x - b.x, a.y - b.y);
-          if (d < bestD && Math.random() < 0.5) { best = b; bestD = d; }
-        }
-        if (best) pulses.push({ a, b: best, t: 0, spd: 0.012 + Math.random() * 0.012 });
+      function colorFor(tint, a) {
+        if (tint === 'warm') return `rgba(255,225,180,${a})`;
+        if (tint === 'cool') return `rgba(180,200,255,${a})`;
+        return `rgba(99,102,241,${a})`; // indigo on light bg
       }
 
       function draw() {
         frame++;
         ctx.clearRect(0, 0, W, H);
 
-        // Move nodes
-        for (const n of nodes) {
-          n.x += n.vx; n.y += n.vy;
-          if (n.x < 0 || n.x > W) n.vx *= -1;
-          if (n.y < 0 || n.y > H) n.vy *= -1;
+        // --- Background twinkling stars ---
+        for (const s of bgStars) {
+          const flick = Math.sin(frame * s.tw + s.phase) * 0.5 + 0.5;
+          const a = s.base * (0.55 + flick * 0.45);
+          // Soft halo
+          const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 4);
+          g.addColorStop(0, colorFor(s.tint, a * 0.45));
+          g.addColorStop(1, colorFor(s.tint, 0));
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 4, 0, Math.PI * 2);
+          ctx.fillStyle = g; ctx.fill();
+          // Core dot
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = colorFor(s.tint, Math.min(1, a + 0.15));
+          ctx.fill();
         }
 
-        // Connection lines
-        for (let i = 0; i < nodes.length; i++) {
-          for (let j = i + 1; j < nodes.length; j++) {
-            const a = nodes[i], b = nodes[j];
-            const d = Math.hypot(a.x - b.x, a.y - b.y);
-            if (d < LINK_DIST) {
-              const alpha = (1 - d / LINK_DIST) * 0.22;
+        // --- Constellations: lines first (subtle), then bright stars ---
+        for (const c of constellations) {
+          // Lines
+          for (const [i, j] of c.edges) {
+            const a = c.stars[i], b = c.stars[j];
+            const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+            grad.addColorStop(0,   'rgba(99,102,241,0.10)');
+            grad.addColorStop(0.5, 'rgba(99,102,241,0.30)');
+            grad.addColorStop(1,   'rgba(99,102,241,0.10)');
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = grad; ctx.lineWidth = 0.9;
+            ctx.stroke();
+          }
+          // Bright twinkling stars at vertices (with cross sparkle)
+          for (const s of c.stars) {
+            const flick = Math.sin(frame * s.tw + s.phase) * 0.5 + 0.5;
+            const a = s.base * (0.55 + flick * 0.45);
+            // Glow
+            const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 7);
+            g.addColorStop(0, `rgba(99,102,241,${a * 0.55})`);
+            g.addColorStop(1, 'rgba(99,102,241,0)');
+            ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 7, 0, Math.PI * 2);
+            ctx.fillStyle = g; ctx.fill();
+            // Core
+            ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(79,70,229,${0.85})`;
+            ctx.fill();
+            // Cross sparkle on bright twinkles
+            if (flick > 0.6) {
+              const len = s.r * 4 * flick;
+              ctx.strokeStyle = `rgba(99,102,241,${0.35 * flick})`;
+              ctx.lineWidth = 0.6;
               ctx.beginPath();
-              ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-              ctx.strokeStyle = `rgba(99,102,241,${alpha})`;
-              ctx.lineWidth = 0.8;
+              ctx.moveTo(s.x - len, s.y); ctx.lineTo(s.x + len, s.y);
+              ctx.moveTo(s.x, s.y - len); ctx.lineTo(s.x, s.y + len);
               ctx.stroke();
             }
           }
-        }
-
-        // Nodes (subtle pulse, soft glow only — no hard dot)
-        for (const n of nodes) {
-          const p = Math.sin(frame * 0.04 + n.phase) * 0.5 + 0.5;
-          // Soft glow only (no hard core to avoid granular feel)
-          const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 9);
-          g.addColorStop(0, `rgba(99,102,241,${0.22 + p * 0.15})`);
-          g.addColorStop(1, 'rgba(99,102,241,0)');
-          ctx.beginPath(); ctx.arc(n.x, n.y, n.r * 9, 0, Math.PI * 2);
-          ctx.fillStyle = g; ctx.fill();
-        }
-
-        // Traveling pulses (light data along edges)
-        if (frame % 8 === 0) spawnPulse();
-        for (let k = pulses.length - 1; k >= 0; k--) {
-          const p = pulses[k];
-          p.t += p.spd;
-          if (p.t >= 1) { pulses.splice(k, 1); continue; }
-          const x = p.a.x + (p.b.x - p.a.x) * p.t;
-          const y = p.a.y + (p.b.y - p.a.y) * p.t;
-          const fade = Math.sin(p.t * Math.PI);
-          // Trail
-          const tx = p.a.x + (p.b.x - p.a.x) * Math.max(0, p.t - 0.18);
-          const ty = p.a.y + (p.b.y - p.a.y) * Math.max(0, p.t - 0.18);
-          const lg = ctx.createLinearGradient(tx, ty, x, y);
-          lg.addColorStop(0, 'rgba(59,130,246,0)');
-          lg.addColorStop(1, `rgba(59,130,246,${0.85 * fade})`);
-          ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(x, y);
-          ctx.strokeStyle = lg; ctx.lineWidth = 1.6; ctx.stroke();
-          // Bright head
-          ctx.beginPath(); ctx.arc(x, y, 2.4 * fade, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255,255,255,${0.95 * fade})`;
-          ctx.fill();
         }
 
         requestAnimationFrame(draw);
