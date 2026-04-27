@@ -566,6 +566,52 @@
     }
     .btn-white:hover { background: var(--gray-100); }
 
+    /* === Course-branded CTA buttons === */
+    /* Gemini (Slide course) — Google blue */
+    .btn-gemini {
+      background: linear-gradient(135deg, #4285F4, #1a73e8);
+      color: var(--white);
+      box-shadow: 0 4px 16px rgba(66,133,244,0.35);
+    }
+    .btn-gemini:hover {
+      background: linear-gradient(135deg, #5a95f5, #2b7de9);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(66,133,244,0.5);
+    }
+    /* Google AI strategy — Google multi-color gradient */
+    .btn-google {
+      background: linear-gradient(135deg, #4285F4 0%, #34A853 35%, #FBBC05 65%, #EA4335 100%);
+      color: var(--white);
+      box-shadow: 0 4px 16px rgba(52,168,83,0.30);
+    }
+    .btn-google:hover {
+      filter: brightness(1.10);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(52,168,83,0.45);
+    }
+    /* Claude — Anthropic warm terracotta */
+    .btn-claude {
+      background: linear-gradient(135deg, #d97757, #b8543b);
+      color: var(--white);
+      box-shadow: 0 4px 16px rgba(217,119,87,0.35);
+    }
+    .btn-claude:hover {
+      background: linear-gradient(135deg, #e08868, #c4604a);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(217,119,87,0.5);
+    }
+    /* NanoBanana — banana yellow */
+    .btn-nanobanana {
+      background: linear-gradient(135deg, #FFD93D, #F2A900);
+      color: #3a2a00;
+      box-shadow: 0 4px 16px rgba(242,169,0,0.40);
+    }
+    .btn-nanobanana:hover {
+      background: linear-gradient(135deg, #FFE066, #FFB800);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(242,169,0,0.55);
+    }
+
     /* ===== FOOTER ===== */
     footer {
       background: var(--dark); color: rgba(255,255,255,0.7);
@@ -1021,10 +1067,10 @@
       <h2 class="section-title">AIを味方につけて、<br>もっとラクに、楽しく働こう。</h2>
       <p class="section-desc">全部覚える必要はありません。目的に合うAIだけを選び、そのまま実務で使えるテンプレ・手順として持ち帰れます。</p>
       <div class="cta-buttons">
-        <a href="https://www.street-academy.com/myclass/127942?conversion_name=direct_message&tracking_code=1e62d2735c30834b22303e5040bea2d2" target="_blank" class="btn btn-white">スライド爆速講座を予約</a>
-        <a href="https://www.street-academy.com/myclass/208497?conversion_name=direct_message&tracking_code=9774cc0bcfcf87e05fa20ce8171a310f" target="_blank" class="btn btn-ghost">Google AI戦略講座を予約</a>
-        <a href="https://www.street-academy.com/myclass/213918?conversion_name=direct_message&tracking_code=78f18b6d602edba8f99e86bdc6ccc5c2" target="_blank" class="btn btn-ghost">Claude体験講座を予約</a>
-        <a href="https://www.street-academy.com/myclass/213732?conversion_name=direct_message&tracking_code=9762c6c714248e697b0b7ab761a8c15c" target="_blank" class="btn btn-ghost">NanoBanana実践編を予約</a>
+        <a href="https://www.street-academy.com/myclass/127942?conversion_name=direct_message&tracking_code=1e62d2735c30834b22303e5040bea2d2" target="_blank" class="btn btn-gemini">スライド爆速講座を予約</a>
+        <a href="https://www.street-academy.com/myclass/208497?conversion_name=direct_message&tracking_code=9774cc0bcfcf87e05fa20ce8171a310f" target="_blank" class="btn btn-google">Google AI戦略講座を予約</a>
+        <a href="https://www.street-academy.com/myclass/213918?conversion_name=direct_message&tracking_code=78f18b6d602edba8f99e86bdc6ccc5c2" target="_blank" class="btn btn-claude">Claude体験講座を予約</a>
+        <a href="https://www.street-academy.com/myclass/213732?conversion_name=direct_message&tracking_code=9762c6c714248e697b0b7ab761a8c15c" target="_blank" class="btn btn-nanobanana">NanoBanana実践編を予約</a>
       </div>
     </div>
   </section>
