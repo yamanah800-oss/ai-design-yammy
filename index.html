@@ -111,47 +111,7 @@
       pointer-events: none;
       z-index: 0;
     }
-    /* ===== Shooting stars (diagonal streaks) ===== */
-    .hero-shooting-stars {
-      position: absolute; inset: 0;
-      pointer-events: none; z-index: 0; overflow: hidden;
-    }
-    .shooting-star {
-      position: absolute;
-      width: 180px; height: 2px;
-      background: linear-gradient(90deg,
-        rgba(255,255,255,0) 0%,
-        rgba(180,200,255,0.55) 40%,
-        rgba(255,255,255,0.95) 80%,
-        rgba(255,255,255,1) 100%);
-      border-radius: 999px;
-      filter: drop-shadow(0 0 6px rgba(180,200,255,0.85))
-              drop-shadow(0 0 14px rgba(120,150,255,0.5));
-      opacity: 0;
-      transform: rotate(-22deg);
-      animation: shoot linear infinite;
-    }
-    /* Bright "head" of the shooting star */
-    .shooting-star::after {
-      content: '';
-      position: absolute; right: -4px; top: 50%;
-      width: 8px; height: 8px;
-      transform: translateY(-50%);
-      background: radial-gradient(circle, #fff 0%, rgba(180,200,255,0.85) 40%, transparent 75%);
-      border-radius: 50%;
-    }
-    .shooting-star:nth-child(1) { top: 10%; left: -200px; animation-duration: 4.5s; animation-delay: 0s;   }
-    .shooting-star:nth-child(2) { top: 28%; left: -200px; animation-duration: 6s;   animation-delay: 3s;   }
-    .shooting-star:nth-child(3) { top: 50%; left: -200px; animation-duration: 5.2s; animation-delay: 7s;   }
-    .shooting-star:nth-child(4) { top: 18%; left: -200px; animation-duration: 5.8s; animation-delay: 11s;  }
-    .shooting-star:nth-child(5) { top: 65%; left: -200px; animation-duration: 4.8s; animation-delay: 14s;  }
-    .shooting-star:nth-child(6) { top: 38%; left: -200px; animation-duration: 5.5s; animation-delay: 18s;  }
-    @keyframes shoot {
-      0%   { transform: translate(0, 0) rotate(-22deg); opacity: 0; }
-      8%   { opacity: 1; }
-      80%  { opacity: 1; }
-      100% { transform: translate(120vw, 50vh) rotate(-22deg); opacity: 0; }
-    }
+    /* (Shooting stars removed) */
     /* Soft flowing aurora wave overlay (replaces dot pattern) */
     .hero-aurora {
       position: absolute; inset: 0;
@@ -782,14 +742,6 @@
   <section class="hero">
     <canvas id="hero-bg-canvas"></canvas>
     <div class="hero-aurora"></div>
-    <div class="hero-shooting-stars">
-      <div class="shooting-star"></div>
-      <div class="shooting-star"></div>
-      <div class="shooting-star"></div>
-      <div class="shooting-star"></div>
-      <div class="shooting-star"></div>
-      <div class="shooting-star"></div>
-    </div>
     <div class="hero-inner">
       <!-- Left column -->
       <div class="hero-left">
@@ -1560,19 +1512,27 @@
       ];
 
       function initStars() {
-        // Tiny background stars
+        // Tiny background stars — denser & more varied for a sparkly sky
         bgStars = [];
-        const density = Math.max(70, Math.floor((W * H) / 9000));
+        const density = Math.max(110, Math.floor((W * H) / 5500));
         for (let i = 0; i < density; i++) {
+          // 18% of stars are "sparklers" (brighter, with cross rays)
+          const isSparkle = Math.random() < 0.18;
           bgStars.push({
             x: Math.random() * W,
             y: Math.random() * H,
-            r: Math.random() * 1.0 + 0.3,
-            base: 0.3 + Math.random() * 0.45,
-            tw: Math.random() * 0.04 + 0.01,
+            r: isSparkle ? (Math.random() * 1.3 + 0.9) : (Math.random() * 0.8 + 0.3),
+            base: isSparkle ? 0.6 + Math.random() * 0.35 : 0.25 + Math.random() * 0.5,
+            // Faster, more variable twinkle
+            tw: 0.02 + Math.random() * 0.07,
             phase: Math.random() * Math.PI * 2,
-            // Some bg stars get a soft warm tint
-            tint: Math.random() < 0.18 ? 'warm' : (Math.random() < 0.18 ? 'cool' : 'white')
+            // Range of how bright the twinkle goes
+            twAmp: 0.55 + Math.random() * 0.4,
+            isSparkle,
+            // Sparkle stars get richer tints
+            tint: isSparkle
+              ? (Math.random() < 0.4 ? 'warm' : (Math.random() < 0.5 ? 'cool' : 'white'))
+              : (Math.random() < 0.18 ? 'warm' : (Math.random() < 0.18 ? 'cool' : 'white'))
           });
         }
         // Constellations: lay several patterns at random positions/scales
@@ -1611,20 +1571,54 @@
         frame++;
         ctx.clearRect(0, 0, W, H);
 
-        // --- Background twinkling stars ---
+        // --- Background twinkling stars (sparkly!) ---
         for (const s of bgStars) {
-          const flick = Math.sin(frame * s.tw + s.phase) * 0.5 + 0.5;
-          const a = s.base * (0.55 + flick * 0.45);
-          // Soft halo
-          const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 4);
-          g.addColorStop(0, colorFor(s.tint, a * 0.45));
+          // Combine two sine waves for a more organic, lively twinkle
+          const f1 = Math.sin(frame * s.tw + s.phase);
+          const f2 = Math.sin(frame * s.tw * 2.7 + s.phase * 1.3);
+          const flick = ((f1 + f2 * 0.45) / 1.45) * 0.5 + 0.5; // 0..1
+          const a = s.base * (1 - s.twAmp + flick * s.twAmp);
+
+          // Soft halo (bigger when bright)
+          const haloR = s.r * (3.5 + flick * 3.5);
+          const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, haloR);
+          g.addColorStop(0, colorFor(s.tint, a * 0.55));
           g.addColorStop(1, colorFor(s.tint, 0));
-          ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 4, 0, Math.PI * 2);
+          ctx.beginPath(); ctx.arc(s.x, s.y, haloR, 0, Math.PI * 2);
           ctx.fillStyle = g; ctx.fill();
+
           // Core dot
           ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fillStyle = colorFor(s.tint, Math.min(1, a + 0.15));
+          ctx.fillStyle = colorFor(s.tint, Math.min(1, a + 0.2));
           ctx.fill();
+
+          // ✦ Cross sparkle rays — appear when star peaks
+          if (flick > 0.65) {
+            const intensity = (flick - 0.65) / 0.35; // 0..1
+            const len = s.r * (4 + flick * 8);
+            ctx.save();
+            ctx.translate(s.x, s.y);
+            // Subtle rotation per star for variety
+            ctx.rotate(s.phase * 0.3);
+            ctx.strokeStyle = colorFor(s.tint, intensity * (s.isSparkle ? 0.9 : 0.55));
+            ctx.lineWidth = s.isSparkle ? 1.0 : 0.6;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-len, 0); ctx.lineTo(len, 0);
+            ctx.moveTo(0, -len); ctx.lineTo(0, len);
+            ctx.stroke();
+            // Diagonal smaller cross for sparklers
+            if (s.isSparkle) {
+              const dlen = len * 0.55;
+              ctx.strokeStyle = colorFor(s.tint, intensity * 0.55);
+              ctx.lineWidth = 0.6;
+              ctx.beginPath();
+              ctx.moveTo(-dlen, -dlen); ctx.lineTo(dlen, dlen);
+              ctx.moveTo(-dlen, dlen);  ctx.lineTo(dlen, -dlen);
+              ctx.stroke();
+            }
+            ctx.restore();
+          }
         }
 
         // --- Constellations: lines first (subtle), then bright stars ---
