@@ -141,20 +141,21 @@
       90%  { opacity: 1; }
       100% { transform: translateY(110vh); opacity: 0; }
     }
-    /* Soft hex pattern overlay */
-    .hero-hex {
+    /* Soft flowing aurora wave overlay (replaces dot pattern) */
+    .hero-aurora {
       position: absolute; inset: 0;
       pointer-events: none; z-index: 0;
-      background-image:
-        radial-gradient(circle at 50% 50%, rgba(99,102,241,0.08) 1px, transparent 1.5px);
-      background-size: 38px 38px;
-      mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 30%, transparent 85%);
-      -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 30%, transparent 85%);
-      animation: hex-drift 20s ease-in-out infinite;
+      background:
+        radial-gradient(ellipse 70% 50% at 30% 30%, rgba(99,102,241,0.10) 0%, transparent 65%),
+        radial-gradient(ellipse 60% 50% at 80% 70%, rgba(59,130,246,0.10) 0%, transparent 65%),
+        radial-gradient(ellipse 40% 30% at 50% 50%, rgba(168,85,247,0.06) 0%, transparent 70%);
+      filter: blur(20px);
+      animation: aurora-drift 18s ease-in-out infinite;
     }
-    @keyframes hex-drift {
-      0%, 100% { transform: translate(0, 0); opacity: 0.6; }
-      50%      { transform: translate(8px, -6px); opacity: 1; }
+    @keyframes aurora-drift {
+      0%, 100% { transform: translate(0, 0) scale(1);     opacity: 0.85; }
+      33%      { transform: translate(20px, -10px) scale(1.05); opacity: 1; }
+      66%      { transform: translate(-15px, 8px) scale(0.98);  opacity: 0.9; }
     }
 
     @keyframes fade-up {
@@ -746,7 +747,7 @@
   <!-- HERO -->
   <section class="hero">
     <canvas id="hero-bg-canvas"></canvas>
-    <div class="hero-hex"></div>
+    <div class="hero-aurora"></div>
     <div class="hero-data-streams">
       <div class="data-stream"></div>
       <div class="data-stream"></div>
@@ -1498,19 +1499,19 @@
       }
       function initNodes() {
         nodes = [];
-        const density = Math.max(35, Math.floor((W * H) / 22000));
+        const density = Math.max(22, Math.floor((W * H) / 38000));
         for (let i = 0; i < density; i++) {
           nodes.push({
             x: Math.random() * W,
             y: Math.random() * H,
-            vx: (Math.random() - 0.5) * 0.18,
-            vy: (Math.random() - 0.5) * 0.18,
-            r: Math.random() * 1.6 + 1.0,
+            vx: (Math.random() - 0.5) * 0.14,
+            vy: (Math.random() - 0.5) * 0.14,
+            r: Math.random() * 0.9 + 0.6,
             phase: Math.random() * Math.PI * 2
           });
         }
       }
-      const LINK_DIST = 130;
+      const LINK_DIST = 170;
 
       let frame = 0;
       function spawnPulse() {
@@ -1553,19 +1554,15 @@
           }
         }
 
-        // Nodes (subtle pulse)
+        // Nodes (subtle pulse, soft glow only — no hard dot)
         for (const n of nodes) {
           const p = Math.sin(frame * 0.04 + n.phase) * 0.5 + 0.5;
-          // Glow
-          const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 6);
-          g.addColorStop(0, `rgba(99,102,241,${0.30 + p * 0.20})`);
+          // Soft glow only (no hard core to avoid granular feel)
+          const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 9);
+          g.addColorStop(0, `rgba(99,102,241,${0.22 + p * 0.15})`);
           g.addColorStop(1, 'rgba(99,102,241,0)');
-          ctx.beginPath(); ctx.arc(n.x, n.y, n.r * 6, 0, Math.PI * 2);
+          ctx.beginPath(); ctx.arc(n.x, n.y, n.r * 9, 0, Math.PI * 2);
           ctx.fillStyle = g; ctx.fill();
-          // Core
-          ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(79,70,229,${0.55 + p * 0.30})`;
-          ctx.fill();
         }
 
         // Traveling pulses (light data along edges)
