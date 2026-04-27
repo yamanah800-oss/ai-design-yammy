@@ -1369,12 +1369,33 @@
         rim.addColorStop(0, 'rgba(215,238,255,.38)'); rim.addColorStop(1, 'rgba(215,238,255,0)');
         ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.strokeStyle = rim; ctx.lineWidth = 2.8; ctx.stroke();
 
-        // "AI" label (fixed, doesn't rotate)
+        // "AI" label (fixed, doesn't rotate) — animated rainbow gradient
         const pulse = Math.sin(frame * .04) * .5 + .5;
-        ctx.font = `900 ${Math.round(R * .46)}px "Inter",sans-serif`;
+        const fontSize = Math.round(R * .46);
+        ctx.font = `900 ${fontSize}px "Inter",sans-serif`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(130,200,255,.95)'; ctx.shadowBlur = 26 + pulse * 14;
-        ctx.fillStyle = 'rgba(255,255,255,.97)'; ctx.fillText('AI', cx, cy); ctx.shadowBlur = 0;
+
+        // Hue cycles smoothly through the spectrum (~30s per full rotation)
+        const hue = (frame * 0.6) % 360;
+        const aiGrad = ctx.createLinearGradient(
+          cx - fontSize * 0.9, cy - fontSize * 0.4,
+          cx + fontSize * 0.9, cy + fontSize * 0.4
+        );
+        aiGrad.addColorStop(0,    `hsl(${hue},                100%, 72%)`);
+        aiGrad.addColorStop(0.33, `hsl(${(hue + 60)  % 360},  100%, 70%)`);
+        aiGrad.addColorStop(0.66, `hsl(${(hue + 140) % 360},  100%, 72%)`);
+        aiGrad.addColorStop(1,    `hsl(${(hue + 220) % 360},  100%, 75%)`);
+
+        // Glow shifts with the gradient for a unified look
+        ctx.shadowColor = `hsla(${(hue + 30) % 360}, 100%, 65%, 0.95)`;
+        ctx.shadowBlur = 30 + pulse * 18;
+        ctx.fillStyle = aiGrad;
+        ctx.fillText('AI', cx, cy);
+
+        // Subtle white inner highlight to keep readability
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillText('AI', cx, cy);
 
         requestAnimationFrame(draw);
       }
