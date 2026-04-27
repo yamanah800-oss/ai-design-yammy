@@ -1114,9 +1114,10 @@
         return { sx: cx + x * scale, sy: cy + y * scale, scale, z };
       }
 
-      // === CONTINENT OUTLINES (real-world degrees lon/lat, converted to radians) ===
+      // (continents/clouds removed — pure blue glowing sphere)
+      /* eslint-disable */
       const D2R = Math.PI / 180;
-      const continentsDeg = [
+      const _continentsDegUnused = [
         { c: 'land', pts: [
           // North America (Alaska -> Canada -> US -> Mexico -> Central America)
           [-165,65],[-160,68],[-141,70],[-125,70],[-110,73],[-95,73],[-80,73],[-72,67],
@@ -1176,26 +1177,7 @@
         ]}
       ];
 
-      // Convert to radians and pre-compute static 3D positions
-      const continents = continentsDeg.map(c => ({
-        color: c.c,
-        verts3d: c.pts.map(([lon, lat]) => lonLatToXYZ(lon * D2R, lat * D2R))
-      }));
-
-      // === CLOUDS (random points on slightly larger sphere) ===
-      const clouds = [];
-      const CLOUD_R = R * 1.015; // just above surface
-      for (let i = 0; i < 28; i++) {
-        const u = Math.random(), v = Math.random();
-        const phi = Math.acos(2 * v - 1);
-        const theta = 2 * Math.PI * u;
-        clouds.push({
-          x: CLOUD_R * Math.sin(phi) * Math.cos(theta),
-          y: CLOUD_R * Math.cos(phi),
-          z: CLOUD_R * Math.sin(phi) * Math.sin(theta),
-          r: 18 + Math.random() * 28
-        });
-      }
+      // (continents/clouds removed — pure blue glowing sphere)
 
       // Convert (lon, lat) -> 3D unit vector, then scale by R
       function lonLatToXYZ(lon, lat) {
@@ -1232,107 +1214,34 @@
           ctx.fillStyle = `rgba(160,200,255,${p.a})`; ctx.fill();
         }
 
-        // --- Atmospheric outer glow (Earth-like cyan halo) ---
+        // --- Atmospheric outer glow (bright blue halo) ---
         [1.42, 1.26, 1.12].forEach((m, i) => {
           const g = ctx.createRadialGradient(cx, cy, R * .92, cx, cy, R * m);
-          g.addColorStop(0, `rgba(120,200,255,${.18 - i * .04})`);
-          g.addColorStop(1, 'rgba(120,200,255,0)');
+          g.addColorStop(0, `rgba(110,160,255,${.22 - i * .04})`);
+          g.addColorStop(1, 'rgba(110,160,255,0)');
           ctx.beginPath(); ctx.arc(cx, cy, R * m, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
         });
 
-        // --- Sphere body (Earth-like: ocean blue + subtle green highlight) ---
+        // --- Sphere body (pure glowing blue) ---
         const sph = ctx.createRadialGradient(cx - R * .32, cy - R * .28, R * .05, cx, cy, R);
-        sph.addColorStop(0,   'rgba(190,235,230,.80)');
-        sph.addColorStop(.15, 'rgba(110,200,180,.85)');
-        sph.addColorStop(.30, 'rgba(70,165,200,.90)');
-        sph.addColorStop(.50, 'rgba(40,110,205,.94)');
-        sph.addColorStop(.78, 'rgba(20,55,155,.97)');
-        sph.addColorStop(1,   'rgba(8,22,82,1)');
+        sph.addColorStop(0,   'rgba(180,210,255,.85)');
+        sph.addColorStop(.18, 'rgba(110,160,250,.90)');
+        sph.addColorStop(.40, 'rgba(60,110,235,.94)');
+        sph.addColorStop(.70, 'rgba(30,65,195,.97)');
+        sph.addColorStop(1,   'rgba(10,25,95,1)');
         ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fillStyle = sph; ctx.fill();
 
-        // === CONTINENTS (rotated with the sphere) ===
+        // Rotation transforms still needed for nodes
         const rotAngle = frame * 0.0014;
         const cR = Math.cos(rotAngle), sR = Math.sin(rotAngle);
         const tiltA = -0.25;
         const cT = Math.cos(tiltA), sT = Math.sin(tiltA);
 
-        function transformPt(p) {
-          const x1 =  p.x * cR + p.z * sR;
-          const z1 = -p.x * sR + p.z * cR;
-          const y2 = p.y * cT - z1 * sT;
-          const z2 = p.y * sT + z1 * cT;
-          const pr = project(x1, y2, z2);
-          return { sx: pr.sx, sy: pr.sy, z: z2, x3: x1, y3: y2 };
-        }
-
-        ctx.save();
-        ctx.beginPath(); ctx.arc(cx, cy, R - 1, 0, Math.PI * 2); ctx.clip();
-
-        for (const cont of continents) {
-          const verts = cont.verts3d.map(transformPt);
-
-          // Skip continents fully on far side
-          const avgZ = verts.reduce((s, v) => s + v.z, 0) / verts.length;
-          if (avgZ > R * 0.55) continue;
-
-          // Depth-based shading (front bright, edge dim)
-          const depth = Math.max(0, (R - avgZ) / (2 * R));
-          const opacity = Math.min(1, depth * 1.4);
-
-          // Land color varies subtly: greener near equator, browner near poles
-          const avgLat = verts.reduce((s, v) => s + Math.asin(-v.y3 / R), 0) / verts.length;
-          const absLat = Math.abs(avgLat);
-          // Mix: equator = green, mid = green-yellow, polar = white-ish
-          let r0, g0, b0;
-          if (absLat > 1.15) { // near poles → icy
-            r0 = 230; g0 = 235; b0 = 230;
-          } else if (absLat > 0.85) { // tundra → tan/brown
-            r0 = 150; g0 = 145; b0 = 105;
-          } else if (absLat > 0.45) { // temperate → green
-            r0 = 95; g0 = 145; b0 = 85;
-          } else { // tropical → vivid green
-            r0 = 80; g0 = 155; b0 = 75;
-          }
-          // Apply lighting (depth)
-          const lr = Math.round(r0 * (0.55 + depth * 0.45));
-          const lg = Math.round(g0 * (0.55 + depth * 0.45));
-          const lb = Math.round(b0 * (0.55 + depth * 0.45));
-
-          ctx.beginPath();
-          verts.forEach((v, idx) => {
-            if (idx === 0) ctx.moveTo(v.sx, v.sy);
-            else ctx.lineTo(v.sx, v.sy);
-          });
-          ctx.closePath();
-          ctx.fillStyle = `rgba(${lr},${lg},${lb},${0.78 * opacity})`;
-          ctx.fill();
-        }
-
-        // === CLOUDS (rotate slower than the planet) ===
-        const cloudAngle = frame * 0.0009;
-        const ccR = Math.cos(cloudAngle), csR = Math.sin(cloudAngle);
-        for (const cl of clouds) {
-          const x1 =  cl.x * ccR + cl.z * csR;
-          const z1 = -cl.x * csR + cl.z * ccR;
-          const y2 = cl.y * cT - z1 * sT;
-          const z2 = cl.y * sT + z1 * cT;
-          if (z2 > R * 0.3) continue; // back side
-          const pr = project(x1, y2, z2);
-          const depth = Math.max(0, (R - z2) / (2 * R));
-          const g = ctx.createRadialGradient(pr.sx, pr.sy, 0, pr.sx, pr.sy, cl.r * pr.scale);
-          g.addColorStop(0, `rgba(255,255,255,${0.35 * depth})`);
-          g.addColorStop(0.6, `rgba(255,255,255,${0.12 * depth})`);
-          g.addColorStop(1, 'rgba(255,255,255,0)');
-          ctx.beginPath(); ctx.arc(pr.sx, pr.sy, cl.r * pr.scale, 0, Math.PI * 2);
-          ctx.fillStyle = g; ctx.fill();
-        }
-        ctx.restore();
-
-        // --- Inner atmospheric rim (lighter cyan band on the lit side) ---
+        // --- Inner atmospheric rim (bright blue glow on the lit side) ---
         const innerAtm = ctx.createRadialGradient(cx, cy, R * .82, cx, cy, R);
-        innerAtm.addColorStop(0, 'rgba(140,210,255,0)');
-        innerAtm.addColorStop(.85, 'rgba(140,210,255,.18)');
-        innerAtm.addColorStop(1, 'rgba(180,230,255,.35)');
+        innerAtm.addColorStop(0, 'rgba(140,180,255,0)');
+        innerAtm.addColorStop(.85, 'rgba(140,180,255,.22)');
+        innerAtm.addColorStop(1, 'rgba(180,210,255,.40)');
         ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fillStyle = innerAtm; ctx.fill();
 
         // === ROTATE NODES (Y-axis rotation: slow, beautiful Earth-like spin) ===
