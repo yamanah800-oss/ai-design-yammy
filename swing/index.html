@@ -281,7 +281,7 @@ async function refresh(){
   HOLDINGS.forEach(h => {
     const s = data.stocks && data.stocks[h.code];
     if (s && s.price != null){
-      state.set(h.code, {price:s.price, prev:s.prev, series:(s.series && s.series.length ? s.series : null), tech:s.tech||null, time: s.time ? new Date(s.time) : new Date(), stale:!!s.stale, error:null});
+      state.set(h.code, {price:s.price, prev:s.prev, series:(s.series && s.series.length ? s.series : null), tech:s.tech||null, autoLevels:s.autoLevels||null, time: s.time ? new Date(s.time) : new Date(), stale:!!s.stale, error:null});
       okN++;
     } else { const p = state.get(h.code) || {}; state.set(h.code, {...p, error:'データ待ち'}); }
   });
@@ -306,11 +306,20 @@ function renderMkt(){
   $('#mkt').innerHTML = cell('日本市場（東証）','Asia/Tokyo',jpOpen) + cell('米国市場（NYSE/NASDAQ）','America/New_York',usOpen);
 }
 
+/* ---------- levels (authored or auto-computed) ---------- */
+// 明示ラインがあればそれを、無ければ日足から算出した自動ラインを使う。
+function levelsOf(h){
+  if (h.levels && Object.keys(h.levels).length) return h.levels;
+  const st = state.get(h.code);
+  return (st && st.autoLevels) ? st.autoLevels : {};
+}
+function isAuto(h){ return !(h.levels && Object.keys(h.levels).length) && !!(state.get(h.code) && state.get(h.code).autoLevels); }
+
 /* ---------- alerts / ratios ---------- */
 function alertsFor(h){
   const s = state.get(h.code); const out = [];
   if (!s || s.price == null) return out;
-  const L = h.levels || {}, p = s.price;
+  const L = levelsOf(h), p = s.price;
   if (L.exit != null && p <= L.exit) out.push({sev:'critical', rank:0, text:`SL（撤退）${fmt(h,L.exit)}を割り込み：全株売却シグナル`});
   else if (L.warn != null && p <= L.warn) out.push({sev:'critical', rank:1, text:`警戒ライン${fmt(h,L.warn)}を割り込み：保有の一部を売却`});
   if (L.tp2 != null && p >= L.tp2) out.push({sev:'good', rank:1, text:`TP2 ${fmt(h,L.tp2)}に到達：残りを利益確定`});
@@ -320,7 +329,7 @@ function alertsFor(h){
   return out;
 }
 function ratio(h){
-  const s = state.get(h.code); const L = h.levels || {};
+  const s = state.get(h.code); const L = levelsOf(h);
   if (!s || s.price == null || L.exit == null || L.tp1 == null || s.price <= L.exit) return null;
   return {r1:(L.tp1 - s.price)/(s.price - L.exit), r2: L.tp2 != null ? (L.tp2 - s.price)/(s.price - L.exit) : null};
 }
@@ -335,7 +344,7 @@ function spark(s){
   return `<svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="1.5" vector-effect="non-scaling-stroke"/><circle cx="${last[0]}" cy="${last[1]}" r="2" fill="${col}"/></svg>`;
 }
 function ladder(h){
-  const s = state.get(h.code), L = h.levels || {}, p = s ? s.price : null;
+  const s = state.get(h.code), L = levelsOf(h), p = s ? s.price : null;
   const marks = Object.entries(L).filter(([k,v]) => v != null && LV[k]);
   const vals = marks.map(m => m[1]).concat(p != null ? [p] : []);
   if (vals.length < 2) return `<div class="pendnote">ライン未設定（現在値のみ表示）</div>`;
@@ -351,9 +360,9 @@ function ladder(h){
   return `<div class="ladder">${g}</div>`;
 }
 function chips(h){
-  const s = state.get(h.code), L = h.levels || {}, p = s ? s.price : null;
+  const s = state.get(h.code), L = levelsOf(h), p = s ? s.price : null;
   const items = Object.keys(LV).filter(k => L[k] != null).map(k => `<span class="chip ${LV[k].cls}"><b>${LV[k].s}</b> <span class="num">${fmt(h,L[k])}</span>${p!=null?`<span class="d">${pctTxt(L[k],p)}</span>`:''}</span>`).join('');
-  return items ? `<div class="chips">${items}</div>` : '';
+  return items ? `<div class="chips">${items}${isAuto(h)?'<span class="chip" style="background:transparent;border-color:var(--rule);color:var(--ink-3)">自動</span>':''}</div>` : '';
 }
 
 function render(){
@@ -432,9 +441,19 @@ function renderDetail(){
       </div>${bar}
       <p class="d-note" style="margin-top:8px">直近約${t.n}営業日：高値 ${fmt(h,t.hi)}／安値 ${fmt(h,t.lo)}、現在値はレンジ下端から${t.pos}%。移動平均は終値の単純平均。<b>数値は日足からの自動計算で、売買ラインの推奨ではありません。</b></p>`;
   };
+  const autoLevelsBlock = () => {
+    const L = s.autoLevels || {}; if (!Object.keys(L).length) return '';
+    const basis = {exit:'直近約3か月の安値（レンジ下限）', add:'価格より下で最も高い移動平均＝押し目の支持目安', tp1:'直近約3か月の高値（レジスタンス）', tp2:'レンジ上放れの測定値（高値＋レンジ幅×0.5）'};
+    const act = {exit:'割れたら手仕舞いを検討', add:'押し目の買い候補', tp1:'戻り高値・一部利確の候補', tp2:'上放れ時の利確目標'};
+    const rows = Object.keys(LV).filter(k => L[k] != null).sort((a,b)=>L[b]-L[a]).map(k => {
+      const dist = price!=null ? pctTxt(L[k], price) : '';
+      return `<div class="lvrow"><span class="chip ${LV[k].cls}"><b>${LV[k].s}</b> <span class="num">${fmt(h,L[k])}</span></span><span class="lvd num">${dist}</span><div class="lvt"><b>${act[k]||''}</b><span class="lvb">根拠：${basis[k]||''}</span></div></div>`;
+    }).join('');
+    return `<h3 class="d-h">参考ライン（テクニカル自動算出）</h3><div class="lvlist">${rows}</div><p class="d-note" style="margin-top:6px"><b>直近約3か月の日足から機械的に算出した参考値です。ファンダメンタルズや個別事情は反映していません（売買推奨ではありません）。</b></p>`;
+  };
   let body;
   if (!d){
-    body = `<p class="pendnote" style="padding:4px 0 8px">この銘柄は個別の詳細分析（財務・売買ライン）は未登録です。以下は日足から自動計算したテクニカルです。ラインや分析を追加するには HOLDINGS を編集してください。</p>${autoTech()}`;
+    body = `<p class="pendnote" style="padding:4px 0 8px">この銘柄は個別のファンダメンタルズ分析は未登録です。以下は日足から自動算出した参考ライン＆テクニカルです。手動の分析を追加するには HOLDINGS を編集してください。</p>${autoLevelsBlock()}${autoTech()}`;
   } else {
     const lv = h.levels || {}, meta = d.lvMeta || {};
     const lvRows = Object.keys(LV).filter(k => lv[k] != null).sort((a,b)=>lv[b]-lv[a]).map(k => {

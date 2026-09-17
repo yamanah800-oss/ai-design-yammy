@@ -71,6 +71,22 @@ function techFromSeries(series, price){
     hi: round(hi), lo: round(lo), pos,
   };
 }
+// 日足テクニカルから機械的に算出する参考ライン（売買推奨ではない）。
+//  撤退=直近約3か月の安値 / 買い増し=価格より下で最も高い移動平均（押し目の支持）
+//  利確1=直近約3か月の高値 / 利確2=レンジ上放れの測定値（高値＋レンジ幅×0.5）
+function autoLevels(t, price){
+  if (!t || price == null) return null;
+  const L = {};
+  if (t.lo != null && t.lo < price) L.exit = round(t.lo);
+  const sup = [t.ma20, t.ma50].filter(m => m != null && m < price).sort((a, b) => b - a)[0];
+  if (sup != null) L.add = round(sup);
+  if (t.hi != null && t.hi > price) L.tp1 = round(t.hi);
+  if (t.hi != null && t.lo != null) {
+    const tp2 = t.hi + (t.hi - t.lo) * 0.5;
+    if (tp2 > (L.tp1 != null ? L.tp1 : price)) L.tp2 = round(tp2);
+  }
+  return Object.keys(L).length ? L : null;
+}
 
 const out = { updatedAt: new Date().toISOString(), stocks: {}, indices: {} };
 for (const h of HOLDINGS) {
@@ -78,8 +94,10 @@ for (const h of HOLDINGS) {
     out.stocks[h.code] = await fetchOne(h.yahoo);
     const s = out.stocks[h.code];
     s.tech = techFromSeries(s.series, s.price);
+    s.autoLevels = autoLevels(s.tech, s.price);
     const pct = s.prev ? ((s.price / s.prev - 1) * 100).toFixed(2) + '%' : 'n/a';
-    console.log(`OK   ${h.code} (${h.yahoo}) = ${s.price} ${s.currency || ''}  prev=${s.prev}  chg=${pct}  ma20=${s.tech ? s.tech.ma20 : '-'} pos=${s.tech ? s.tech.pos + '%' : '-'}`);
+    const al = s.autoLevels ? `SL${s.autoLevels.exit ?? '-'}/add${s.autoLevels.add ?? '-'}/TP${s.autoLevels.tp1 ?? '-'}` : '-';
+    console.log(`OK   ${h.code} (${h.yahoo}) = ${s.price} ${s.currency || ''}  prev=${s.prev}  chg=${pct}  ma20=${s.tech ? s.tech.ma20 : '-'} pos=${s.tech ? s.tech.pos + '%' : '-'}  auto=${al}`);
   } catch (e) {
     console.log(`FAIL ${h.code} (${h.yahoo}) : ${e.message}`);
   }
