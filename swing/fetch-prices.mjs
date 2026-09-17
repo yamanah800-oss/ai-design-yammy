@@ -27,7 +27,11 @@ async function fetchOne(sym) {
       const q = (res.indicators && res.indicators.quote && res.indicators.quote[0]) || {};
       const closes = (q.close || []).filter((x) => x != null);
       const price = m.regularMarketPrice != null ? m.regularMarketPrice : (closes.length ? closes[closes.length - 1] : null);
-      const prev = m.chartPreviousClose != null ? m.chartPreviousClose : (m.previousClose != null ? m.previousClose : (closes.length > 1 ? closes[closes.length - 2] : null));
+      // 前日比の基準は「前営業日の終値」。chartPreviousClose はレンジ先頭より前（=約3か月前）の
+      // 終値なので使わない。previousClose（前営業日の公式終値）→日足の直近2本目→の順で採用。
+      let prev = m.previousClose != null ? m.previousClose : null;
+      if (prev == null && closes.length > 1) prev = closes[closes.length - 2];
+      if (prev == null) prev = m.chartPreviousClose != null ? m.chartPreviousClose : null;
       if (price == null) throw new Error('価格なし');
       return {
         price, prev,
@@ -44,7 +48,9 @@ const out = { updatedAt: new Date().toISOString(), stocks: {} };
 for (const h of HOLDINGS) {
   try {
     out.stocks[h.code] = await fetchOne(h.yahoo);
-    console.log(`OK   ${h.code} (${h.yahoo}) = ${out.stocks[h.code].price} ${out.stocks[h.code].currency || ''}`);
+    const s = out.stocks[h.code];
+    const pct = s.prev ? ((s.price / s.prev - 1) * 100).toFixed(2) + '%' : 'n/a';
+    console.log(`OK   ${h.code} (${h.yahoo}) = ${s.price} ${s.currency || ''}  prev=${s.prev}  chg=${pct}`);
   } catch (e) {
     console.log(`FAIL ${h.code} (${h.yahoo}) : ${e.message}`);
   }
