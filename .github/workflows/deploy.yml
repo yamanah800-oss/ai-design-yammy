@@ -3,6 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -26,6 +28,15 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch live stock prices (server-side, no CORS)
+        continue-on-error: true
+        run: node swing/fetch-prices.mjs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
