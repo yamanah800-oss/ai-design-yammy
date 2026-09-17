@@ -44,7 +44,17 @@ async function fetchOne(sym) {
   throw lastErr || new Error('取得失敗');
 }
 
-const out = { updatedAt: new Date().toISOString(), stocks: {} };
+const INDICES = [
+  { key: 'nikkei', yahoo: '^N225', label: '日経平均' },
+  { key: 'sp500',  yahoo: '^GSPC', label: 'S&P500' },
+  { key: 'nasdaq', yahoo: '^IXIC', label: 'NASDAQ' },
+  { key: 'vix',    yahoo: '^VIX',  label: 'VIX' },
+  { key: 'us10y',  yahoo: '^TNX',  label: '米10年債' },
+  { key: 'usdjpy', yahoo: 'JPY=X', label: 'USD/JPY' },
+  { key: 'wti',    yahoo: 'CL=F',  label: 'WTI原油' },
+];
+
+const out = { updatedAt: new Date().toISOString(), stocks: {}, indices: {} };
 for (const h of HOLDINGS) {
   try {
     out.stocks[h.code] = await fetchOne(h.yahoo);
@@ -55,12 +65,25 @@ for (const h of HOLDINGS) {
     console.log(`FAIL ${h.code} (${h.yahoo}) : ${e.message}`);
   }
 }
+for (const ix of INDICES) {
+  try {
+    const q = await fetchOne(ix.yahoo);
+    out.indices[ix.key] = { label: ix.label, value: q.price, prev: q.prev };
+    const pct = q.prev ? ((q.price / q.prev - 1) * 100).toFixed(2) + '%' : 'n/a';
+    console.log(`IDX  ${ix.key} (${ix.yahoo}) = ${q.price}  chg=${pct}`);
+  } catch (e) {
+    console.log(`IDX  ${ix.key} (${ix.yahoo}) FAIL : ${e.message}`);
+  }
+}
 
-// 取得できなかった銘柄は前回の値を保持（サイトが空にならないように）
-let prevData = { stocks: {} };
+// 取得できなかったものは前回値を保持（サイトが空にならないように）
+let prevData = { stocks: {}, indices: {} };
 try { prevData = JSON.parse(readFileSync('swing/prices.json', 'utf8')); } catch (_) {}
 for (const k of Object.keys(prevData.stocks || {})) {
   if (!out.stocks[k]) { out.stocks[k] = prevData.stocks[k]; out.stocks[k].stale = true; }
+}
+for (const k of Object.keys(prevData.indices || {})) {
+  if (!out.indices[k]) { out.indices[k] = prevData.indices[k]; out.indices[k].stale = true; }
 }
 
 writeFileSync('swing/prices.json', JSON.stringify(out, null, 2));
