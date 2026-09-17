@@ -194,7 +194,7 @@ footer a{color:var(--ink-2)}
 
   <footer>
     <div>株価は GitHub Actions がサーバー側で Yahoo Finance から日本・米国とも自動取得し、約30分ごとに更新します（取引所により15〜20分遅延の場合あり）。市場が閉まっている時間帯は直近の終値を表示します。</div>
-    <div>ラインを追加・変更するには、ページ先頭のスクリプト内 <b>HOLDINGS</b> 配列を編集してください。</div>
+    <div>ファンダメンタルズは3層構造です：<b>①株価・テクニカル＝約30分毎の自動更新</b>、<b>②PER・配当利回り・PBR・時価総額＝現在値から毎回自動計算</b>、<b>③EPS・BPS・配当・決算＝基準日付きスナップショット（決算のたびに更新）</b>。各銘柄の詳細に基準日と出典を明記しています。ラインや数値の変更は <b>HOLDINGS</b> 配列を編集してください。</div>
     <div class="disc">本ページは情報提供目的のみで、売買を推奨するものではありません。投資判断はご自身の責任で行ってください。</div>
   </footer>
 </div>
@@ -206,6 +206,7 @@ footer a{color:var(--ink-2)}
 const HOLDINGS = [
   {code:'8306', yahoo:'8306.T', name:'三菱UFJフィナンシャル・グループ', market:'東証プライム', cur:'JPY',
     judge:'保有継続（買い増し可）', levels:{exit:3440, add:3580, tp1:3850, tp2:4150},
+    fund:{biz:'国内最大手の総合金融グループ（銀行・信託・証券・カード）', eps:260, epsLabel:'予想EPS（IFIS予想PER 14.1倍・基準3,662円より）', div:96, bps:2012, roe:'9.46%（TTM）', recent:'2026年4〜6月期：純利益8,094億円（前年同期比+48.2%・第1四半期で過去最高）', asof:'2026-09-11', src:[{t:'IFIS株予報 8306',u:'https://kabuyoho.ifis.co.jp/index.php?bcode=8306'}]},
     d:{
       asof:'2026-09-11', strength:'★★★★☆', tone:'強気', trend:'全MA上（パーフェクトオーダー）',
       action:'保有継続。3,580〜3,590円（50日線）で買い増し可、終値3,440円割れで全株撤退',
@@ -238,15 +239,20 @@ const HOLDINGS = [
       vol:{label:'増加（9/11メジャーSQ・20日平均の1.40倍）', asof:'2026-09-11', comment:'5/29以降の価格帯別出来高は3,530〜3,710円に約35%が集中し、POCは約3,655円。9/11は前日比-1円ながら出来高が20日平均の1.40倍に膨らんだが、これは9月メジャーSQによる需給要因で方向性のシグナルではない。3,813円を終値で抜ければ上昇が、SL 3,440円を割れば下落が速まりやすい。'}
     }},
   {code:'9702', yahoo:'9702.T', name:'アイ・エス・ビー', market:'東証プライム', cur:'JPY',
-    judge:'保有継続', levels:{}},
+    judge:'保有継続', levels:{},
+    fund:{biz:'システム開発（組込み・制御ソフト、モバイル、金融・公共向けIT）', eps:161, epsLabel:'予想EPS（会社予想PER≒15倍から逆算・要確認）', div:70, bps:1336, bpsLabel:'PBR1.82倍(実)から逆算・要確認', roe:'10.24%（実）', eqRatio:'67.2%', recent:'2026/12期中間：売上191億円(+4.0%)、営業利益15億円(+12.3%)、中間純利益10億円(+28.1%)', asof:'2026-08〜09（会社予想ベース）', src:[{t:'株予報Pro 9702',u:'https://kabuyoho.jp/reportTop?bcode=9702'},{t:'IRBANK 9702',u:'https://irbank.net/9702'}]}},
   {code:'BAC', yahoo:'BAC', name:'Bank of America', market:'NYSE', cur:'USD',
-    judge:'保有', levels:{}},
+    judge:'保有', levels:{},
+    fund:{biz:'米大手商業銀行（消費者・法人・投資銀行・資産運用）', eps:4.39, epsLabel:'TTM（2026-09時点）', div:1.28, recent:'2026年Q1（3月期）：純利益（普通株主帰属）$8,155M、希薄化後EPS $1.11', asof:'2026-09-04（TTM）', src:[{t:'fullratio BAC PE',u:'https://fullratio.com/stocks/nyse-bac/pe-ratio'},{t:'SEC 10-Q FY2026',u:'https://www.sec.gov/Archives/edgar/data/0000070858/000007085826000249/bac-20260331.htm'}]}},
   {code:'GL', yahoo:'GL', name:'Globe Life', market:'NYSE', cur:'USD',
-    judge:'保有', levels:{}},
+    judge:'保有', levels:{},
+    fund:{biz:'米生命保険・補足医療保険の持株会社（American Income 等）', eps:15.75, epsLabel:'2026通期ガイダンス中央値（$15.55–15.95）', div:1.32, recent:'2026年Q2：希薄化後EPS $3.65（前年$3.05）。通期EPSガイダンスを$15.55–15.95へ引上げ。時価総額 約$13.4B', asof:'2026-Q2／会社ガイダンス', src:[{t:'SEC 8-K Q2 FY2026',u:'https://www.sec.gov/Archives/edgar/data/0000320335/000032033526000203/q2fy2026earningsrelease.htm'},{t:'stockanalysis GL',u:'https://stockanalysis.com/stocks/gl/'}]}},
   {code:'ALL', yahoo:'ALL', name:'Allstate', market:'NYSE', cur:'USD',
-    judge:'保有', levels:{}},
+    judge:'保有', levels:{},
+    fund:{biz:'米大手損害保険（自動車・住宅保険）', eps:38.19, epsLabel:'TTM（2025/12期・希薄化後）', div:4.32, recent:'損保料率改善で低PER（TTM実績EPS $38.19、予想PER 8.5倍前後）。時価総額 約$56.4B（2026）', asof:'2026（TTMは2025/12期）', src:[{t:'stockanalysis ALL 統計',u:'https://stockanalysis.com/stocks/all/statistics/'},{t:'SEC 8-K FY2026',u:'https://www.sec.gov/Archives/edgar/data/0000899051/000089905126000074/allcorp33126investorsupp.htm'}]}},
   {code:'GOOG', yahoo:'GOOG', name:'Alphabet (Google)', market:'NASDAQ', cur:'USD',
-    judge:'保有', levels:{}},
+    judge:'保有', levels:{},
+    fund:{biz:'検索・広告・クラウド・YouTube（Alphabet／Google）', eps:14.22, epsLabel:'2026予想EPS（会社予想）', div:0.88, shares:12230000000, recent:'2026年Q2：希薄化後EPS $9.23（前年$2.33）。2026売上予想 $486.5B、予想EPS $14.22', asof:'2026-09-04（予想／Q2）', src:[{t:'stockanalysis GOOGL 統計',u:'https://stockanalysis.com/stocks/googl/statistics/'},{t:'SEC 8-K FY2026',u:'https://www.sec.gov/Archives/edgar/data/0001652044/000165204426000043/googexhibit991q12026.htm'}]}},
 ];
 
 const LV = {exit:{s:'SL',cls:'sl'}, warn:{s:'警戒',cls:'wn'}, add:{s:'買増',cls:'ad'}, tp1:{s:'TP1',cls:'tp'}, tp2:{s:'TP2',cls:'tp'}, rebuy:{s:'買戻',cls:'sl'}};
@@ -387,7 +393,7 @@ function render(){
     const px = s.price != null
       ? `<div class="px num">${fmt(h,s.price)}</div><div class="ch num ${ch==null?'flat':ch>=0?'up':'down'}">${ch==null?'—':(ch>=0?'+':'')+ch.toFixed(2)+'%'}</div>${spark(s)}`
       : `<div class="px num" style="color:var(--ink-3)">—</div><div class="errnote">${esc(s.error||'取得中…')}</div>`;
-    const hasD = !!h.d;
+    const hasD = !!(h.d || h.fund);
     return `<div class="row${h.code===selected?' sel':''}" data-code="${esc(h.code)}" tabindex="0" role="button" aria-label="${esc(h.code)} の詳細を表示">
       <div class="idc"><div class="code">${esc(h.code)}${hasD?' <span class="hasd">分析</span>':''}</div><div class="nm">${esc(h.name)}</div><div class="mkt2">${esc(h.market)}・${esc(h.judge||'')}</div></div>
       <div class="pxc">${px}</div>
@@ -451,9 +457,32 @@ function renderDetail(){
     }).join('');
     return `<h3 class="d-h">参考ライン（テクニカル自動算出）</h3><div class="lvlist">${rows}</div><p class="d-note" style="margin-top:6px"><b>直近約3か月の日足から機械的に算出した参考値です。ファンダメンタルズや個別事情は反映していません（売買推奨ではありません）。</b></p>`;
   };
+  const fmtMcap = v => v==null ? '—' : isJPY(h) ? Math.round(v/1e8).toLocaleString('ja-JP')+'億円' : '$'+(v/1e9).toFixed(2)+'B';
+  const fundBlock = () => {
+    const f = h.fund; if (!f) return '';
+    const p = price;
+    const per = (f.eps && p!=null) ? p/f.eps : null;
+    const yld = (f.div!=null && p) ? f.div/p*100 : null;
+    const pbr = (f.bps && p!=null) ? p/f.bps : null;
+    const mc  = (f.shares && p!=null) ? p*f.shares : null;
+    const pills = [
+      per!=null?`<span class="pill">予想PER <b class="num">${per.toFixed(1)}倍</b></span>`:'',
+      yld!=null?`<span class="pill">配当利回り <b class="num">${yld.toFixed(2)}%</b></span>`:'',
+      pbr!=null?`<span class="pill">PBR <b class="num">${pbr.toFixed(2)}倍</b></span>`:'',
+      mc!=null ?`<span class="pill">時価総額 <b class="num">${fmtMcap(mc)}</b></span>`:'',
+      f.roe?`<span class="pill">ROE <b class="num">${esc(f.roe)}</b></span>`:'',
+      f.eqRatio?`<span class="pill">自己資本比率 <b class="num">${esc(f.eqRatio)}</b></span>`:'',
+    ].filter(Boolean).join('');
+    const srcs = (f.src||[]).map(x=>`<a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>`).join('・');
+    return `<h3 class="d-h">主要指標（現在値ベースで自動計算）</h3>
+      ${f.biz?`<p class="d-note" style="margin:0 0 8px"><b>事業：</b>${esc(f.biz)}</p>`:''}
+      <div class="pills">${pills||'<span class="pendnote">主要指標は不明</span>'}</div>
+      ${f.recent?`<p class="d-note" style="margin-top:8px"><b>直近：</b>${esc(f.recent)}</p>`:''}
+      <p class="d-asof">PER・配当利回り・PBR・時価総額は<b>現在値から自動計算</b>（毎回更新）。EPS・BPS・年間配当・株数は基準日 ${esc(f.asof||'—')} のスナップショット${f.epsLabel?`／EPS: ${esc(f.epsLabel)}`:''}${f.bpsLabel?`／BPS: ${esc(f.bpsLabel)}`:''}。出典：${srcs||'—'}</p>`;
+  };
   let body;
   if (!d){
-    body = `<p class="pendnote" style="padding:4px 0 8px">この銘柄は個別のファンダメンタルズ分析は未登録です。以下は日足から自動算出した参考ライン＆テクニカルです。手動の分析を追加するには HOLDINGS を編集してください。</p>${autoLevelsBlock()}${autoTech()}`;
+    body = `<p class="pendnote" style="padding:4px 0 8px">個別の売買ラインは未登録です。以下はファンダメンタルズ（出典付き）＋日足から自動算出した参考ライン＆テクニカルです。</p>${fundBlock()}${autoLevelsBlock()}${autoTech()}`;
   } else {
     const lv = h.levels || {}, meta = d.lvMeta || {};
     const lvRows = Object.keys(LV).filter(k => lv[k] != null).sort((a,b)=>lv[b]-lv[a]).map(k => {
@@ -478,6 +507,7 @@ function renderDetail(){
       ${kv(d.tech||[])}
       <h3 class="d-h">ファンダメンタルズ</h3>
       ${kv(d.fund||[])}
+      ${fundBlock()}
       ${d.vol?`<h3 class="d-h">出来高（${esc(d.vol.label||'')}）</h3><p class="d-note">${esc(d.vol.comment||'')}</p>`:''}
       ${d.trail?`<h3 class="d-h">トレーリング方針</h3><p class="d-note">${esc(d.trail)}</p>`:''}
       ${autoTech()}
