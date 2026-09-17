@@ -130,18 +130,9 @@ footer a{color:var(--ink-2)}
     <div class="controls">
       <span><span class="dot" id="livedot"></span> <span id="status">読み込み中…</span></span>
       <label><input type="checkbox" id="auto" checked> 自動更新（60秒）</label>
-      <button class="btn" id="cfg">⚙ APIキー</button>
       <button class="btn primary" id="refresh">↻ 今すぐ更新</button>
     </div>
   </header>
-
-  <section class="panel" id="cfgbox" hidden style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-    <div style="font-size:13px"><b>Twelve Data APIキー</b>（無料・確実に自動取得）</div>
-    <input id="tdkey" placeholder="ここにAPIキーを貼り付け" autocomplete="off" style="flex:1;min-width:200px;border:1px solid var(--rule);background:var(--surface);border-radius:6px;padding:6px 8px;font-size:13px">
-    <button class="btn primary" id="tdsave">保存して取得</button>
-    <button class="btn" id="tdclear">クリア</button>
-    <div style="font-size:12px;color:var(--ink-3);flex-basis:100%">無料キーの取得：<a href="https://twelvedata.com/pricing" target="_blank" rel="noopener">twelvedata.com</a> で無料登録 → ダッシュボードの「API Key」をコピーして上に貼り付け。キーはこのブラウザにのみ保存されます。設定すると日本・米国とも確実に取得します（未設定時は無料プロキシで試行）。</div>
-  </section>
 
   <section class="mkt" id="mkt" aria-label="市場ステータス"></section>
 
@@ -152,7 +143,7 @@ footer a{color:var(--ink-2)}
   </section>
 
   <footer>
-    <div>現在値はブラウザから自動取得します（取引所により15〜20分遅延の場合あり）。市場が閉まっている時間帯は直近の終値を表示します。確実に取得するには右上「⚙ APIキー」から Twelve Data の無料APIキーを設定してください（未設定時は無料プロキシ経由の Yahoo Finance で試行します）。</div>
+    <div>株価は GitHub Actions がサーバー側で Yahoo Finance から日本・米国とも自動取得し、約30分ごとに更新します（取引所により15〜20分遅延の場合あり）。市場が閉まっている時間帯は直近の終値を表示します。</div>
     <div>ラインを追加・変更するには、ページ先頭のスクリプト内 <b>HOLDINGS</b> 配列を編集してください。</div>
     <div class="disc">本ページは情報提供目的のみで、売買を推奨するものではありません。投資判断はご自身の責任で行ってください。</div>
   </footer>
@@ -188,67 +179,32 @@ const fmt = (h, v) => v == null || isNaN(v) ? '—' : isJPY(h) ? Math.round(v).t
 const pctTxt = (a, b) => { const p = (a / b - 1) * 100; return (p >= 0 ? '+' : '') + p.toFixed(1) + '%'; };
 const r2 = v => (Math.round(v * 100) / 100).toFixed(2);
 
-/* ---------- data fetch (client-side, via CORS-enabled proxies) ---------- */
-// Yahoo Finance chart API を、CORSヘッダを返すプロキシ経由でブラウザから取得。
-// 複数経路を順に試し、いずれか成功すれば採用（無料プロキシの不調に強い構成）。
-function extractQuote(j){
-  const res = j && j.chart && j.chart.result && j.chart.result[0];
-  if (!res || !res.meta) throw new Error('形式不正');
-  const m = res.meta;
-  const q = (res.indicators && res.indicators.quote && res.indicators.quote[0]) || {};
-  const closes = (q.close || []).filter(x => x != null);
-  const price = m.regularMarketPrice != null ? m.regularMarketPrice : (closes.length ? closes[closes.length-1] : null);
-  const prev = m.chartPreviousClose != null ? m.chartPreviousClose : (m.previousClose != null ? m.previousClose : (closes.length > 1 ? closes[closes.length-2] : null));
-  if (price == null) throw new Error('価格なし');
-  return {price, prev, series: closes.slice(-60), time: m.regularMarketTime ? new Date(m.regularMarketTime*1000) : new Date(), error:null};
-}
-function tdKey(){ try { return localStorage.getItem('swinglive.tdkey') || ''; } catch(_){ return ''; } }
-async function fetchViaTwelve(h, key){
-  const p = isJPY(h) ? `symbol=${encodeURIComponent(h.code)}&mic_code=XTKS` : `symbol=${encodeURIComponent(h.yahoo)}&country=United%20States`;
-  const r = await fetch(`https://api.twelvedata.com/quote?${p}&apikey=${encodeURIComponent(key)}`, {cache:'no-store'});
+/* ---------- data (server-side prices.json via GitHub Actions) ---------- */
+// GitHub Actions が Yahoo Finance から日本＋米国の株価を取得し prices.json を生成。
+// ブラウザは同一オリジンの prices.json を読むだけなので、CORSやAPIキーは不要（日本株も可）。
+async function loadPrices(){
+  const r = await fetch('./prices.json?t=' + Date.now(), {cache:'no-store'});
   if (!r.ok) throw new Error('HTTP ' + r.status);
-  const j = await r.json();
-  if (j && (j.status === 'error' || (typeof j.code === 'number' && j.code >= 400))) throw new Error(j.message || 'APIエラー');
-  const price = parseFloat(j.close), prev = parseFloat(j.previous_close);
-  if (!(price > 0)) throw new Error('価格が取得できません');
-  return {price, prev: prev > 0 ? prev : null, series: null, time: new Date(), error: null};
+  return r.json();
 }
-async function fetchQuote(h){
-  let tdErr;
-  const key = tdKey();
-  if (key){ try { return await fetchViaTwelve(h, key); } catch(e){ tdErr = e; } }
-  const sym = h.yahoo;
-  const y = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=3mo&interval=1d`;
-  const attempts = [
-    // allorigins /get は {contents:"..."} でCORS * を返す（rawはCORS無しで弾かれる）
-    async () => { const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(y), {cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); const w = await r.json(); return extractQuote(JSON.parse(w.contents)); },
-    // codetabs proxy（CORS *）
-    async () => { const r = await fetch('https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(y), {cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return extractQuote(await r.json()); },
-    // corsproxy.io（CORS *）
-    async () => { const r = await fetch('https://corsproxy.io/?url=' + encodeURIComponent(y), {cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return extractQuote(await r.json()); },
-    // thingproxy
-    async () => { const r = await fetch('https://thingproxy.freeboard.io/fetch/' + y, {cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return extractQuote(await r.json()); },
-  ];
-  let lastErr;
-  for (const a of attempts){ try { return await a(); } catch(e){ lastErr = e; } }
-  return {error: (tdErr ? 'API: ' + tdErr.message : (lastErr && lastErr.message)) || '取得失敗'};
-}
-
 async function refresh(){
   const dot = $('#livedot'), st = $('#status');
   dot.className = 'dot'; st.textContent = '取得中…';
-  const results = await Promise.all(HOLDINGS.map(h => fetchQuote(h)));
+  let data;
+  try { data = await loadPrices(); }
+  catch(e){ dot.className = 'dot err'; st.textContent = '価格データを読み込めませんでした'; return; }
   let okN = 0;
-  HOLDINGS.forEach((h, i) => {
-    const r = results[i];
-    if (r.error){ const prevState = state.get(h.code) || {}; state.set(h.code, {...prevState, error:r.error}); }
-    else { state.set(h.code, r); okN++; }
+  HOLDINGS.forEach(h => {
+    const s = data.stocks && data.stocks[h.code];
+    if (s && s.price != null){
+      state.set(h.code, {price:s.price, prev:s.prev, series:(s.series && s.series.length ? s.series : null), time: s.time ? new Date(s.time) : new Date(), stale:!!s.stale, error:null});
+      okN++;
+    } else { const p = state.get(h.code) || {}; state.set(h.code, {...p, error:'データ待ち'}); }
   });
   render();
-  const now = new Date();
-  if (okN === HOLDINGS.length){ dot.className = 'dot live'; st.textContent = '更新 ' + fmtClock(now); }
-  else if (okN > 0){ dot.className = 'dot'; st.textContent = `更新 ${fmtClock(now)}（${HOLDINGS.length-okN}件失敗）`; }
-  else { dot.className = 'dot err'; st.textContent = '取得に失敗しました（再試行してください）'; }
+  const upd = data.updatedAt ? new Date(data.updatedAt) : null;
+  if (okN === 0){ dot.className = 'dot err'; st.textContent = 'データ生成待ち（数分後に自動で入ります）'; }
+  else { dot.className = 'dot live'; st.textContent = (upd ? 'サーバー更新 ' + upd.toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '更新 ' + fmtClock(new Date())) + (okN < HOLDINGS.length ? `（${HOLDINGS.length-okN}件待ち）` : ''); }
 }
 const fmtClock = d => d.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 
@@ -353,12 +309,6 @@ function stopTimer(){ if (timer){ clearInterval(timer); timer = null; } }
 $('#refresh').onclick = () => refresh();
 $('#auto').onchange = () => { try{ localStorage.setItem('swinglive.auto', $('#auto').checked?'1':'0'); }catch(_){} startTimer(); };
 try { const a = localStorage.getItem('swinglive.auto'); if (a === '0') $('#auto').checked = false; } catch(_){}
-
-// APIキー設定パネル
-$('#cfg').onclick = () => { const b = $('#cfgbox'); b.hidden = !b.hidden; if (!b.hidden){ $('#tdkey').value = tdKey(); $('#tdkey').focus(); } };
-$('#tdsave').onclick = () => { const v = $('#tdkey').value.trim(); try { if (v) localStorage.setItem('swinglive.tdkey', v); else localStorage.removeItem('swinglive.tdkey'); } catch(_){} $('#cfgbox').hidden = true; refresh(); };
-$('#tdclear').onclick = () => { $('#tdkey').value=''; try { localStorage.removeItem('swinglive.tdkey'); } catch(_){} refresh(); };
-if (tdKey()) $('#cfg').textContent = '⚙ APIキー✓';
 
 setInterval(renderMkt, 30000);
 render();
