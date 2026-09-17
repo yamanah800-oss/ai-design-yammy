@@ -153,6 +153,9 @@ footer a{color:var(--ink-2)}
 .rng-bar{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--exit-soft),var(--surface-2),var(--tp-soft))}
 .rng-now{position:absolute;top:-3px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--ink);border:2px solid var(--surface)}
 .rng-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:4px;font-family:var(--mono)}
+.ver{font-size:10px;color:var(--ink-3);border:1px solid var(--rule);border-radius:4px;padding:1px 6px}
+.bigchart{width:100%;height:170px;display:block;margin:8px 0 2px;background:var(--surface-2);border:1px solid var(--rule-2);border-radius:8px}
+.chart-cap{font-size:11px;color:var(--ink-3);margin:0 0 10px}
 @media (max-width:720px){
   .kv{grid-template-columns:1fr}.kv-k{margin-top:4px}
   .lvrow{grid-template-columns:auto 1fr}.lvd{grid-row:1;grid-column:2;text-align:left}.lvt{grid-column:1/-1}
@@ -173,6 +176,7 @@ footer a{color:var(--ink-2)}
       <p>現在値をブラウザから自動取得し、撤退・警戒・買い増し・利確ラインで管理します。</p>
     </div>
     <div class="controls">
+      <span class="ver" id="ver" title="ビルド版数"></span>
       <span><span class="dot" id="livedot"></span> <span id="status">読み込み中…</span></span>
       <label><input type="checkbox" id="auto" checked> 自動更新（60秒）</label>
       <button class="btn primary" id="refresh">↻ 今すぐ更新</button>
@@ -349,6 +353,19 @@ function spark(s){
   const last = pts[pts.length-1].split(',');
   return `<svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="1.5" vector-effect="non-scaling-stroke"/><circle cx="${last[0]}" cy="${last[1]}" r="2" fill="${col}"/></svg>`;
 }
+// 詳細パネル用の大きな価格チャート（直近日足）
+function bigChart(h, s){
+  const c = s && s.series; if (!c || c.length < 3) return '<div class="pendnote" style="padding:6px 0">チャート用データを取得中…</div>';
+  const w = 640, ht = 170, pl = 56, pr = 8, pt = 10, pb = 16;
+  const lo = Math.min(...c), hi = Math.max(...c);
+  const X = i => pl + i / (c.length - 1) * (w - pl - pr);
+  const Y = v => pt + (1 - (v - lo) / ((hi - lo) || 1)) * (ht - pt - pb);
+  const pts = c.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+  const col = c[c.length - 1] >= c[0] ? 'var(--tp)' : 'var(--exit)';
+  const grid = [hi, (hi + lo) / 2, lo].map(v => `<line x1="${pl}" y1="${Y(v).toFixed(1)}" x2="${w - pr}" y2="${Y(v).toFixed(1)}" stroke="var(--rule-2)" stroke-width="1"/><text x="6" y="${(Y(v) + 3).toFixed(1)}" font-size="10" fill="var(--ink-3)">${esc(fmt(h, v))}</text>`).join('');
+  const lx = X(c.length - 1).toFixed(1), ly = Y(c[c.length - 1]).toFixed(1);
+  return `<svg class="bigchart" viewBox="0 0 ${w} ${ht}" preserveAspectRatio="none" role="img" aria-label="${esc(h.code)} 価格チャート">${grid}<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke"/><circle cx="${lx}" cy="${ly}" r="3" fill="${col}"/></svg><div class="chart-cap">直近約${c.length}営業日の終値推移（安値 ${esc(fmt(h,lo))}／高値 ${esc(fmt(h,hi))}）</div>`;
+}
 function ladder(h){
   const s = state.get(h.code), L = levelsOf(h), p = s ? s.price : null;
   const marks = Object.entries(L).filter(([k,v]) => v != null && LV[k]);
@@ -519,7 +536,7 @@ function renderDetail(){
       <div><div class="d-code">${esc(h.code)} <span class="d-name">${esc(h.name)}</span></div>
       <div class="d-sub">${esc(h.market)}${d&&d.strength?' ・ '+esc(d.strength):''}${d&&d.trend?' ・ '+esc(d.trend):''}</div></div>
       <div class="d-px">${price!=null?fmt(h,price):'—'} ${chHtml}</div>
-    </div>${body}`;
+    </div>${bigChart(h,s)}${body}`;
 }
 
 /* ---------- boot / loop ---------- */
@@ -540,6 +557,7 @@ $('#rows').addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.row[data-code]')){ e.preventDefault(); e.target.closest('.row').click(); }
 });
 
+try { $('#ver').textContent = 'build v12 (詳細チャート)'; } catch(_){}
 setInterval(renderMkt, 30000);
 render();
 refresh().then(startTimer);
