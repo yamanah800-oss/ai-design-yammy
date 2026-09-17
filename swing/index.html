@@ -111,7 +111,48 @@ button,input,select{font:inherit;color:inherit}
 footer{font-size:12px;color:var(--ink-3);display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--rule);padding-top:14px}
 footer a{color:var(--ink-2)}
 .disc{background:var(--warn-soft);color:var(--ink);padding:8px 12px;border-radius:6px;font-size:12px}
+/* market indices bar */
+.idxbar{display:flex;flex-wrap:wrap;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.idxbar:empty{display:none}
+.ix{background:var(--surface);padding:6px 12px;display:flex;flex-direction:column;gap:1px;flex:1 1 120px;min-width:0}
+.ix-l{font-size:10.5px;color:var(--ink-3)}
+.ix-v{font-size:14px;font-weight:600}
+.ix-c{font-size:11px}
+/* clickable rows */
+.row{cursor:pointer;transition:background .12s}
+.row:hover{background:var(--surface-2)}
+.row.sel{background:var(--accent-soft)}
+.hasd{font-size:9.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:3px;padding:0 5px;margin-left:5px;vertical-align:middle}
+.rowhint{font-size:11px;color:var(--ink-3);padding:8px 16px}
+/* detail panel */
+.detail{padding:16px}
+.d-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--rule-2);padding-bottom:10px;margin-bottom:12px}
+.d-code{font-family:var(--mono);font-size:18px;font-weight:700}
+.d-name{font-family:var(--sans);font-size:14px;font-weight:500;color:var(--ink-2)}
+.d-sub{font-size:12px;color:var(--ink-3);margin-top:2px}
+.d-px{font-size:20px;font-weight:700;font-family:var(--mono);white-space:nowrap}
+.d-px .num{font-size:13px;margin-left:6px}
+.d-summary{font-size:13.5px;line-height:1.75;margin:0 0 12px}
+.d-action{background:var(--accent-soft);border-radius:6px;padding:8px 12px;font-size:13px;margin-bottom:6px;line-height:1.6}
+.d-tag{font-size:10.5px;font-weight:700;color:var(--accent);margin-right:8px;letter-spacing:.04em}
+.d-h{font-size:13px;font-weight:700;margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--rule-2)}
+.d-note{font-size:12.5px;line-height:1.7;color:var(--ink-2);margin:0}
+.d-asof{font-size:11px;color:var(--ink-3);margin:16px 0 0;border-top:1px dashed var(--rule);padding-top:8px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12.5px;line-height:1.65}
+.kv-k{color:var(--ink-3);white-space:nowrap;font-weight:600}
+.kv-v{color:var(--ink);overflow-wrap:anywhere}
+.lvlist{display:flex;flex-direction:column;gap:8px}
+.lvrow{display:grid;grid-template-columns:auto auto 1fr;gap:6px 12px;align-items:baseline;font-size:12.5px}
+.lvd{color:var(--ink-3);font-size:11px;text-align:right}
+.lvt b{font-weight:700}
+.lvb{display:block;color:var(--ink-3);font-size:11.5px;margin-top:2px}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pill{font-size:11.5px;background:var(--surface-2);border:1px solid var(--rule-2);border-radius:5px;padding:2px 8px}
+.pill b{font-weight:700}
 @media (max-width:720px){
+  .kv{grid-template-columns:1fr}.kv-k{margin-top:4px}
+  .lvrow{grid-template-columns:auto 1fr}.lvd{grid-row:1;grid-column:2;text-align:left}.lvt{grid-column:1/-1}
+
   .row{grid-template-columns:1fr auto;grid-template-areas:"id px" "lad lad" "rt rt"}
   .row .idc{grid-area:id}.row .pxc{grid-area:px;text-align:right}.row .lad{grid-area:lad}.row .ratio{grid-area:rt;text-align:left}
   .row .ratio .num{display:inline;margin-right:6px}
@@ -136,11 +177,16 @@ footer a{color:var(--ink-2)}
 
   <section class="mkt" id="mkt" aria-label="市場ステータス"></section>
 
+  <section class="idxbar" id="idx" aria-label="市場指標"></section>
+
   <section class="panel">
     <div class="panel-h"><h2>本日のアクション</h2><span class="eyebrow" id="asof"></span></div>
     <div class="alerts" id="alerts"><div class="alert"><span class="sev none">…</span><span>データを取得中です。</span></div></div>
     <div class="rows" id="rows"></div>
+    <div class="rowhint">▸ 銘柄をクリックすると詳細分析を表示します</div>
   </section>
+
+  <section class="panel detail" id="detailwrap" hidden></section>
 
   <footer>
     <div>株価は GitHub Actions がサーバー側で Yahoo Finance から日本・米国とも自動取得し、約30分ごとに更新します（取引所により15〜20分遅延の場合あり）。市場が閉まっている時間帯は直近の終値を表示します。</div>
@@ -155,7 +201,38 @@ footer a{color:var(--ink-2)}
    levels: exit=撤退SL, warn=警戒, add=買い増し, tp1=利確1, tp2=利確2, rebuy=買い戻し（任意） */
 const HOLDINGS = [
   {code:'8306', yahoo:'8306.T', name:'三菱UFJフィナンシャル・グループ', market:'東証プライム', cur:'JPY',
-    judge:'保有継続（買い増し可）', levels:{exit:3440, add:3580, tp1:3850, tp2:4150}},
+    judge:'保有継続（買い増し可）', levels:{exit:3440, add:3580, tp1:3850, tp2:4150},
+    d:{
+      asof:'2026-09-11', strength:'★★★★☆', tone:'強気', trend:'全MA上（パーフェクトオーダー）',
+      action:'保有継続。3,580〜3,590円（50日線）で買い増し可、終値3,440円割れで全株撤退',
+      summary:'4〜6月期の純利益は8,094億円（前年同期比+48.2％）と第1四半期で過去最高を更新し、9/17〜18の日銀会合でも追加利上げ観測が続く。株価は20日・50日・200日線をすべて上回るパーフェクトオーダーを維持しており、上昇トレンドは崩れていない。9/9のMACDデッドクロスはゼロ線上での短期調整シグナルにとどまるため保有を継続する。50日線（3,580円）は買い増し候補、8/20安値を割り込む3,440円が撤退ライン。',
+      fund:[
+        {k:'直近業績', v:'2026年4〜6月期：純利益8,094億円（+48.2％、Q1過去最高）。金利上昇と貸出増による資金利益拡大、手数料・S&T収益の伸長、モルガン・スタンレー持分の好調が寄与'},
+        {k:'通期見通し', v:'純利益2兆7,000億円（据え置き・進捗率30％）。市場予想は2兆7,640億円で上方修正余地あり'},
+        {k:'主要指標', v:'予想PER 14.1倍（IFIS）／PBR 1.82倍／予想配当利回り 2.62％（年96円÷3,662円）／ROE 9.46％（TTM）'},
+        {k:'業績ドライバー', v:'日銀の段階的利上げ（9/17〜18会合で追加利上げ観測、エコノミスト予想は2027年末2.25〜2.5％）、貸出残高増、株主還元'},
+        {k:'主要リスク', v:'①長期金利急騰による保有債券の含み損拡大・景気懸念（8/19にメガバンクが4％超下落）／②中東情勢悪化によるリスクオフ／③日銀が追加利上げを見送った場合の失望売り／④円高進行による外貨建て収益の目減り'},
+        {k:'次のイベント', v:'9/16 FOMC／9/17〜18 日銀会合／11月 中間決算（日程は要確認）'},
+        {k:'アナリスト評価', v:'10名中 強気8・やや強気1・中立1（IFIS株予報）。米系大手証券が目標株価を4,300円に引き上げ。平均目標株価は不明'}
+      ],
+      tech:[
+        {k:'トレンド', v:'終値3,661円 ＞ 20日線3,626円 ＞ 50日線3,588円 ＞ 200日線 約2,943円（8/30時点の公表値）。50日線は上向きを維持'},
+        {k:'モメンタム', v:'MACD 32.6／シグナル 37.0：9/9のゼロ線上デッドクロスが継続（短期調整の範囲）。RSI(14) 53.2＝中立'},
+        {k:'需給（出来高）', v:'9/11は5,110万株＝20日平均3,657万株の1.40倍。ただし9月メジャーSQ（SQ値63,039.49円）による需給要因。5日平均3,856万株'},
+        {k:'サポート', v:'3,588円（50日線）／3,464〜3,481円（8/20・8/24安値）'},
+        {k:'レジスタンス', v:'3,684円（9/11高値）／3,785円（9/4）／3,813円（52週高値・日中）'},
+        {k:'総合評価', v:'上昇トレンド中の保ち合い。3,800円台の終値上抜けで次の上昇波'}
+      ],
+      lvMeta:{
+        exit:{act:'終値で割れたら全株売却', basis:'8/20安値3,464円を明確に割り込む水準（ボックス下抜け＝上昇シナリオ否定）'},
+        add:{act:'終値で50日線を維持すれば買い増し（撤退ライン厳守が前提）', basis:'50日線3,580円。7月以降の押し目は50日線付近で反発'},
+        tp1:{act:'保有の1/3を利益確定', basis:'52週高値3,813円（日中）の上抜け確認水準'},
+        tp2:{act:'残りを売却', basis:'ボックス値幅335円を上限3,799円に加算（4,134円）＋米系目標4,300円の手前'}
+      },
+      ind:{ma20:3626, ma50:3588, ma200:2943, macd:32.58, sig:36.95, macdLabel:'ゼロ線上DC継続（9/9〜）', rsi:53.2, rsiLabel:'中立'},
+      trail:'利確①到達後は撤退ラインを3,662円（9/10終値）へ引き上げ、日銀会合（9/18）で利上げが決まれば3,580円を下回らない限り保有',
+      vol:{label:'増加（9/11メジャーSQ・20日平均の1.40倍）', asof:'2026-09-11', comment:'5/29以降の価格帯別出来高は3,530〜3,710円に約35%が集中し、POCは約3,655円。9/11は前日比-1円ながら出来高が20日平均の1.40倍に膨らんだが、これは9月メジャーSQによる需給要因で方向性のシグナルではない。3,813円を終値で抜ければ上昇が、SL 3,440円を割れば下落が速まりやすい。'}
+    }},
   {code:'9702', yahoo:'9702.T', name:'アイ・エス・ビー', market:'東証プライム', cur:'JPY',
     judge:'保有継続', levels:{}},
   {code:'BAC', yahoo:'BAC', name:'Bank of America', market:'NYSE', cur:'USD',
@@ -171,6 +248,8 @@ const HOLDINGS = [
 const LV = {exit:{s:'SL',cls:'sl'}, warn:{s:'警戒',cls:'wn'}, add:{s:'買増',cls:'ad'}, tp1:{s:'TP1',cls:'tp'}, tp2:{s:'TP2',cls:'tp'}, rebuy:{s:'買戻',cls:'sl'}};
 const state = new Map();   // code -> {price, prev, series, time, error}
 let timer = null;
+let indices = null;                 // market indices from prices.json
+let selected = HOLDINGS[0].code;    // detail panel target
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -193,6 +272,7 @@ async function refresh(){
   let data;
   try { data = await loadPrices(); }
   catch(e){ dot.className = 'dot err'; st.textContent = '価格データを読み込めませんでした'; return; }
+  indices = data.indices || null;
   let okN = 0;
   HOLDINGS.forEach(h => {
     const s = data.stocks && data.stocks[h.code];
@@ -294,13 +374,86 @@ function render(){
     const px = s.price != null
       ? `<div class="px num">${fmt(h,s.price)}</div><div class="ch num ${ch==null?'flat':ch>=0?'up':'down'}">${ch==null?'—':(ch>=0?'+':'')+ch.toFixed(2)+'%'}</div>${spark(s)}`
       : `<div class="px num" style="color:var(--ink-3)">—</div><div class="errnote">${esc(s.error||'取得中…')}</div>`;
-    return `<div class="row">
-      <div class="idc"><div class="code">${esc(h.code)}</div><div class="nm">${esc(h.name)}</div><div class="mkt2">${esc(h.market)}・${esc(h.judge||'')}</div></div>
+    const hasD = !!h.d;
+    return `<div class="row${h.code===selected?' sel':''}" data-code="${esc(h.code)}" tabindex="0" role="button" aria-label="${esc(h.code)} の詳細を表示">
+      <div class="idc"><div class="code">${esc(h.code)}${hasD?' <span class="hasd">分析</span>':''}</div><div class="nm">${esc(h.name)}</div><div class="mkt2">${esc(h.market)}・${esc(h.judge||'')}</div></div>
       <div class="pxc">${px}</div>
       <div class="lad">${ladder(h)}${chips(h)}</div>
       <div class="ratio" title="上値余地÷下値リスク（TP1基準）"><span class="num" style="color:${rt?(rt.r1<1?'var(--warn)':'var(--ink)'):'var(--ink-3)'}">${rt?r2(rt.r1):'—'}</span><small>上値÷下値${rt&&rt.r2!=null?' ② '+r2(rt.r2):''}</small></div>
     </div>`;
   }).join('');
+  renderIdx();
+  renderDetail();
+}
+
+/* ---------- market indices ---------- */
+function renderIdx(){
+  const el = $('#idx'); if (!el) return;
+  if (!indices || !Object.keys(indices).length){ el.innerHTML = ''; return; }
+  const order = ['nikkei','topix','sp500','nasdaq','vix','us10y','usdjpy','wti'];
+  const fmtV = (k,v) => {
+    if (v == null) return '—';
+    if (k === 'usdjpy') return v.toFixed(2);
+    if (k === 'us10y') return v.toFixed(2) + '%';
+    if (k === 'vix') return v.toFixed(2);
+    if (k === 'wti') return '$' + v.toFixed(2);
+    return Math.round(v).toLocaleString('en-US');
+  };
+  const keys = order.filter(k => indices[k]).concat(Object.keys(indices).filter(k => !order.includes(k)));
+  el.innerHTML = keys.map(k => {
+    const ix = indices[k]; const ch = (ix.value != null && ix.prev) ? (ix.value/ix.prev-1)*100 : null;
+    return `<div class="ix"><span class="ix-l">${esc(ix.label||k)}</span><span class="ix-v num">${fmtV(k,ix.value)}</span><span class="ix-c num ${ch==null?'flat':ch>=0?'up':'down'}">${ch==null?'':(ch>=0?'+':'')+ch.toFixed(2)+'%'}</span></div>`;
+  }).join('');
+}
+
+/* ---------- detail panel (元アプリの深い分析) ---------- */
+function renderDetail(){
+  const wrap = $('#detailwrap'); if (!wrap) return;
+  const h = HOLDINGS.find(x => x.code === selected) || HOLDINGS[0];
+  const s = state.get(h.code) || {};
+  const d = h.d;
+  const price = s.price != null ? s.price : null;
+  const ch = (price != null && s.prev) ? (price/s.prev-1)*100 : null;
+  const chHtml = ch==null ? '' : `<span class="num ${ch>=0?'up':'down'}">${(ch>=0?'+':'')+ch.toFixed(2)}%</span>`;
+  const kv = arr => `<div class="kv">${arr.map(x=>`<div class="kv-k">${esc(x.k)}</div><div class="kv-v">${esc(x.v)}</div>`).join('')}</div>`;
+  let body;
+  if (!d){
+    body = `<p class="pendnote" style="padding:4px 0">この銘柄の詳細分析はまだ登録されていません（現在値・前日比のみ）。ライン（SL/TP）や分析を追加するには HOLDINGS を編集してください。</p>`;
+  } else {
+    const lv = h.levels || {}, meta = d.lvMeta || {};
+    const lvRows = Object.keys(LV).filter(k => lv[k] != null).sort((a,b)=>lv[b]-lv[a]).map(k => {
+      const m = meta[k] || {}; const dist = price!=null ? pctTxt(lv[k], price) : '';
+      return `<div class="lvrow"><span class="chip ${LV[k].cls}"><b>${LV[k].s}</b> <span class="num">${fmt(h,lv[k])}</span></span><span class="lvd num">${dist}</span><div class="lvt"><b>${esc(m.act||'')}</b>${m.basis?`<span class="lvb">根拠：${esc(m.basis)}</span>`:''}</div></div>`;
+    }).join('');
+    const ind = d.ind || {};
+    const indHtml = `<div class="pills">
+      ${ind.ma20!=null?`<span class="pill">20日線 <b class="num">${fmt(h,ind.ma20)}</b></span>`:''}
+      ${ind.ma50!=null?`<span class="pill">50日線 <b class="num">${fmt(h,ind.ma50)}</b></span>`:''}
+      ${ind.ma200!=null?`<span class="pill">200日線 <b class="num">${fmt(h,ind.ma200)}</b></span>`:''}
+      ${ind.macd!=null?`<span class="pill">MACD <b class="num">${ind.macd}</b>/<b class="num">${ind.sig}</b> ${esc(ind.macdLabel||'')}</span>`:''}
+      ${ind.rsi!=null?`<span class="pill">RSI <b class="num">${ind.rsi}</b> ${esc(ind.rsiLabel||'')}</span>`:''}
+    </div>`;
+    body = `
+      <p class="d-summary">${esc(d.summary||'')}</p>
+      <div class="d-action"><span class="d-tag">アクション</span>${esc(d.action||'')}</div>
+      <h3 class="d-h">ライン（撤退・警戒・買い増し・利確）</h3>
+      <div class="lvlist">${lvRows||'<span class="pendnote">ライン未設定</span>'}</div>
+      <h3 class="d-h">テクニカル</h3>
+      ${indHtml}
+      ${kv(d.tech||[])}
+      <h3 class="d-h">ファンダメンタルズ</h3>
+      ${kv(d.fund||[])}
+      ${d.vol?`<h3 class="d-h">出来高（${esc(d.vol.label||'')}）</h3><p class="d-note">${esc(d.vol.comment||'')}</p>`:''}
+      ${d.trail?`<h3 class="d-h">トレーリング方針</h3><p class="d-note">${esc(d.trail)}</p>`:''}
+      <p class="d-asof">分析基準日：${esc(d.asof||'—')}（現在値・前日比はライブ、分析コメントはこの基準日時点のスナップショット）</p>`;
+  }
+  wrap.hidden = false;
+  wrap.innerHTML = `
+    <div class="d-head">
+      <div><div class="d-code">${esc(h.code)} <span class="d-name">${esc(h.name)}</span></div>
+      <div class="d-sub">${esc(h.market)}${d&&d.strength?' ・ '+esc(d.strength):''}${d&&d.trend?' ・ '+esc(d.trend):''}</div></div>
+      <div class="d-px">${price!=null?fmt(h,price):'—'} ${chHtml}</div>
+    </div>${body}`;
 }
 
 /* ---------- boot / loop ---------- */
@@ -309,6 +462,17 @@ function stopTimer(){ if (timer){ clearInterval(timer); timer = null; } }
 $('#refresh').onclick = () => refresh();
 $('#auto').onchange = () => { try{ localStorage.setItem('swinglive.auto', $('#auto').checked?'1':'0'); }catch(_){} startTimer(); };
 try { const a = localStorage.getItem('swinglive.auto'); if (a === '0') $('#auto').checked = false; } catch(_){}
+
+$('#rows').addEventListener('click', e => {
+  const r = e.target.closest('.row[data-code]'); if (!r) return;
+  selected = r.dataset.code;
+  $('#rows').querySelectorAll('.row').forEach(x => x.classList.toggle('sel', x.dataset.code === selected));
+  renderDetail();
+  $('#detailwrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+});
+$('#rows').addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.row[data-code]')){ e.preventDefault(); e.target.closest('.row').click(); }
+});
 
 setInterval(renderMkt, 30000);
 render();
