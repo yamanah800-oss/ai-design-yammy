@@ -25,7 +25,12 @@ async function fetchOne(sym) {
       if (!res || !res.meta) throw new Error('形式不正');
       const m = res.meta;
       const q = (res.indicators && res.indicators.quote && res.indicators.quote[0]) || {};
-      const closes = (q.close || []).filter((x) => x != null);
+      // 終値と日付を対応づけて欠損を除去（系列と日付を整列させる）
+      const rawC = q.close || [], ts = res.timestamp || [];
+      const pairs = [];
+      for (let i = 0; i < rawC.length; i++) { if (rawC[i] != null && ts[i] != null) pairs.push([ts[i], rawC[i]]); }
+      const closes = pairs.map((p) => p[1]);
+      const dates = pairs.slice(-60).map((p) => new Date(p[0] * 1000).toISOString().slice(0, 10));
       const price = m.regularMarketPrice != null ? m.regularMarketPrice : (closes.length ? closes[closes.length - 1] : null);
       // 前日比の基準は「前営業日の終値」。chartPreviousClose はレンジ先頭より前（=約3か月前）の
       // 終値なので使わない。previousClose（前営業日の公式終値）→日足の直近2本目→の順で採用。
@@ -37,6 +42,7 @@ async function fetchOne(sym) {
         price, prev,
         currency: m.currency || null,
         series: closes.slice(-60).map((v) => Math.round(v * 100) / 100),
+        dates,
         time: new Date((m.regularMarketTime ? m.regularMarketTime * 1000 : Date.now())).toISOString(),
       };
     } catch (e) { lastErr = e; }
