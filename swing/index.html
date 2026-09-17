@@ -149,6 +149,10 @@ footer a{color:var(--ink-2)}
 .pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .pill{font-size:11.5px;background:var(--surface-2);border:1px solid var(--rule-2);border-radius:5px;padding:2px 8px}
 .pill b{font-weight:700}
+.rng{margin-top:4px}
+.rng-bar{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--exit-soft),var(--surface-2),var(--tp-soft))}
+.rng-now{position:absolute;top:-3px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--ink);border:2px solid var(--surface)}
+.rng-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:4px;font-family:var(--mono)}
 @media (max-width:720px){
   .kv{grid-template-columns:1fr}.kv-k{margin-top:4px}
   .lvrow{grid-template-columns:auto 1fr}.lvd{grid-row:1;grid-column:2;text-align:left}.lvt{grid-column:1/-1}
@@ -277,7 +281,7 @@ async function refresh(){
   HOLDINGS.forEach(h => {
     const s = data.stocks && data.stocks[h.code];
     if (s && s.price != null){
-      state.set(h.code, {price:s.price, prev:s.prev, series:(s.series && s.series.length ? s.series : null), time: s.time ? new Date(s.time) : new Date(), stale:!!s.stale, error:null});
+      state.set(h.code, {price:s.price, prev:s.prev, series:(s.series && s.series.length ? s.series : null), tech:s.tech||null, time: s.time ? new Date(s.time) : new Date(), stale:!!s.stale, error:null});
       okN++;
     } else { const p = state.get(h.code) || {}; state.set(h.code, {...p, error:'データ待ち'}); }
   });
@@ -416,9 +420,21 @@ function renderDetail(){
   const ch = (price != null && s.prev) ? (price/s.prev-1)*100 : null;
   const chHtml = ch==null ? '' : `<span class="num ${ch>=0?'up':'down'}">${(ch>=0?'+':'')+ch.toFixed(2)}%</span>`;
   const kv = arr => `<div class="kv">${arr.map(x=>`<div class="kv-k">${esc(x.k)}</div><div class="kv-v">${esc(x.v)}</div>`).join('')}</div>`;
+  const autoTech = () => {
+    const t = s.tech; if (!t) return '';
+    const dev = v => v==null ? '' : ` <span class="${v>=0?'up':'down'}">(${v>=0?'+':''}${v}%)</span>`;
+    const bar = t.pos!=null ? `<div class="rng"><div class="rng-bar"><span class="rng-now" style="left:${t.pos}%"></span></div><div class="rng-ends"><span>安値 ${fmt(h,t.lo)}</span><span>レンジ内 ${t.pos}%</span><span>高値 ${fmt(h,t.hi)}</span></div></div>` : '';
+    return `<h3 class="d-h">テクニカル（自動計算・直近${t.n}営業日）</h3>
+      <div class="pills">
+        ${t.ma20!=null?`<span class="pill">20日線 <b class="num">${fmt(h,t.ma20)}</b>${dev(t.dev20)}</span>`:''}
+        ${t.ma50!=null?`<span class="pill">50日線 <b class="num">${fmt(h,t.ma50)}</b>${dev(t.dev50)}</span>`:''}
+        ${t.ma75!=null?`<span class="pill">75日線 <b class="num">${fmt(h,t.ma75)}</b></span>`:''}
+      </div>${bar}
+      <p class="d-note" style="margin-top:8px">直近約${t.n}営業日：高値 ${fmt(h,t.hi)}／安値 ${fmt(h,t.lo)}、現在値はレンジ下端から${t.pos}%。移動平均は終値の単純平均。<b>数値は日足からの自動計算で、売買ラインの推奨ではありません。</b></p>`;
+  };
   let body;
   if (!d){
-    body = `<p class="pendnote" style="padding:4px 0">この銘柄の詳細分析はまだ登録されていません（現在値・前日比のみ）。ライン（SL/TP）や分析を追加するには HOLDINGS を編集してください。</p>`;
+    body = `<p class="pendnote" style="padding:4px 0 8px">この銘柄は個別の詳細分析（財務・売買ライン）は未登録です。以下は日足から自動計算したテクニカルです。ラインや分析を追加するには HOLDINGS を編集してください。</p>${autoTech()}`;
   } else {
     const lv = h.levels || {}, meta = d.lvMeta || {};
     const lvRows = Object.keys(LV).filter(k => lv[k] != null).sort((a,b)=>lv[b]-lv[a]).map(k => {
@@ -445,7 +461,8 @@ function renderDetail(){
       ${kv(d.fund||[])}
       ${d.vol?`<h3 class="d-h">出来高（${esc(d.vol.label||'')}）</h3><p class="d-note">${esc(d.vol.comment||'')}</p>`:''}
       ${d.trail?`<h3 class="d-h">トレーリング方針</h3><p class="d-note">${esc(d.trail)}</p>`:''}
-      <p class="d-asof">分析基準日：${esc(d.asof||'—')}（現在値・前日比はライブ、分析コメントはこの基準日時点のスナップショット）</p>`;
+      ${autoTech()}
+      <p class="d-asof">分析基準日：${esc(d.asof||'—')}（現在値・前日比・自動計算テクニカルはライブ、その他の分析コメントはこの基準日時点のスナップショット）</p>`;
   }
   wrap.hidden = false;
   wrap.innerHTML = `

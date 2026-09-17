@@ -54,13 +54,32 @@ const INDICES = [
   { key: 'wti',    yahoo: 'CL=F',  label: 'WTI原油' },
 ];
 
+// 直近日足系列から素直に計算できるテクニカル（移動平均・レンジ高安・現在位置）。
+// 数値はすべて系列から算出した事実で、売買ラインの推奨ではない。
+function round(v){ return v == null ? null : Math.round(v * 100) / 100; }
+function techFromSeries(series, price){
+  if (!series || series.length < 5 || price == null) return null;
+  const ma = n => { const a = series.slice(-n); return a.length ? a.reduce((x, y) => x + y, 0) / a.length : null; };
+  const hi = Math.max(...series), lo = Math.min(...series);
+  const pos = hi > lo ? Math.round((price - lo) / (hi - lo) * 100) : null;
+  const dev = m => (m == null ? null : round((price / m - 1) * 100)); // 現在値の乖離%
+  const ma20 = ma(20), ma50 = ma(50), ma75 = ma(Math.min(75, series.length));
+  return {
+    n: series.length,
+    ma20: round(ma20), ma50: round(ma50), ma75: round(ma75),
+    dev20: dev(ma20), dev50: dev(ma50),
+    hi: round(hi), lo: round(lo), pos,
+  };
+}
+
 const out = { updatedAt: new Date().toISOString(), stocks: {}, indices: {} };
 for (const h of HOLDINGS) {
   try {
     out.stocks[h.code] = await fetchOne(h.yahoo);
     const s = out.stocks[h.code];
+    s.tech = techFromSeries(s.series, s.price);
     const pct = s.prev ? ((s.price / s.prev - 1) * 100).toFixed(2) + '%' : 'n/a';
-    console.log(`OK   ${h.code} (${h.yahoo}) = ${s.price} ${s.currency || ''}  prev=${s.prev}  chg=${pct}`);
+    console.log(`OK   ${h.code} (${h.yahoo}) = ${s.price} ${s.currency || ''}  prev=${s.prev}  chg=${pct}  ma20=${s.tech ? s.tech.ma20 : '-'} pos=${s.tech ? s.tech.pos + '%' : '-'}`);
   } catch (e) {
     console.log(`FAIL ${h.code} (${h.yahoo}) : ${e.message}`);
   }
