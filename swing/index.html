@@ -179,31 +179,34 @@ const fmt = (h, v) => v == null || isNaN(v) ? '—' : isJPY(h) ? Math.round(v).t
 const pctTxt = (a, b) => { const p = (a / b - 1) * 100; return (p >= 0 ? '+' : '') + p.toFixed(1) + '%'; };
 const r2 = v => (Math.round(v * 100) / 100).toFixed(2);
 
-/* ---------- data fetch (client-side, via CORS proxy) ---------- */
-const PROXIES = [
-  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
-  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
-  u => 'https://thingproxy.freeboard.io/fetch/' + u,
-];
+/* ---------- data fetch (client-side, via CORS-enabled proxies) ---------- */
+// Yahoo Finance chart API を、CORSヘッダを返すプロキシ経由でブラウザから取得。
+// 複数経路を順に試し、いずれか成功すれば採用（無料プロキシの不調に強い構成）。
+function extractQuote(j){
+  const res = j && j.chart && j.chart.result && j.chart.result[0];
+  if (!res || !res.meta) throw new Error('形式不正');
+  const m = res.meta;
+  const q = (res.indicators && res.indicators.quote && res.indicators.quote[0]) || {};
+  const closes = (q.close || []).filter(x => x != null);
+  const price = m.regularMarketPrice != null ? m.regularMarketPrice : (closes.length ? closes[closes.length-1] : null);
+  const prev = m.chartPreviousClose != null ? m.chartPreviousClose : (m.previousClose != null ? m.previousClose : (closes.length > 1 ? closes[closes.length-2] : null));
+  if (price == null) throw new Error('価格なし');
+  return {price, prev, series: closes.slice(-60), time: m.regularMarketTime ? new Date(m.regularMarketTime*1000) : new Date(), error:null};
+}
 async function fetchQuote(sym){
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=3mo&interval=1d`;
+  const y = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=3mo&interval=1d`;
+  const attempts = [
+    // allorigins /get は {contents:"..."} でCORS * を返す（rawはCORS無しで弾かれる）
+    async () => { const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(y), {cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); const w = await r.json(); return extractQuote(JSON.parse(w.contents)); },
+    // codetabs proxy（CORS *）
+    async () => { const r = await fetch('https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(y), {cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return extractQuote(await r.json()); },
+    // corsproxy.io（CORS *）
+    async () => { const r = await fetch('https://corsproxy.io/?url=' + encodeURIComponent(y), {cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return extractQuote(await r.json()); },
+    // thingproxy
+    async () => { const r = await fetch('https://thingproxy.freeboard.io/fetch/' + y, {cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return extractQuote(await r.json()); },
+  ];
   let lastErr;
-  for (const wrap of PROXIES){
-    try {
-      const r = await fetch(wrap(url), {cache:'no-store'});
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const j = await r.json();
-      const res = j && j.chart && j.chart.result && j.chart.result[0];
-      if (!res || !res.meta) throw new Error('データ形式が不正');
-      const m = res.meta;
-      const q = (res.indicators && res.indicators.quote && res.indicators.quote[0]) || {};
-      const closes = (q.close || []).filter(x => x != null);
-      const price = m.regularMarketPrice != null ? m.regularMarketPrice : (closes.length ? closes[closes.length-1] : null);
-      const prev = m.chartPreviousClose != null ? m.chartPreviousClose : (m.previousClose != null ? m.previousClose : (closes.length > 1 ? closes[closes.length-2] : null));
-      if (price == null) throw new Error('価格が取得できません');
-      return {price, prev, series: closes.slice(-60), time: m.regularMarketTime ? new Date(m.regularMarketTime*1000) : new Date(), error:null};
-    } catch(e){ lastErr = e; }
-  }
+  for (const a of attempts){ try { return await a(); } catch(e){ lastErr = e; } }
   return {error: (lastErr && lastErr.message) || '取得失敗'};
 }
 
