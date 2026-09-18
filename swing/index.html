@@ -137,6 +137,17 @@ footer a{color:var(--ink-2)}
 #removedbar .rlab{font-weight:600}
 .restore{border:1px solid var(--rule);background:var(--surface-2);border-radius:999px;padding:2px 10px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:var(--mono)}
 .restore:hover{border-color:var(--accent);color:var(--accent)}
+/* 銘柄追加フォーム */
+#addform{padding:12px 16px;border-bottom:1px solid var(--rule-2);background:var(--surface-2)}
+#addform .addrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#addform input{border:1px solid var(--rule);border-radius:6px;padding:6px 10px;font-size:13px;background:var(--surface)}
+#addcode{width:220px;font-family:var(--mono)}
+#addname{flex:1 1 180px;min-width:140px}
+.addbadge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface);border:1px solid var(--rule);color:var(--ink-3);white-space:nowrap}
+.addbadge.jp{color:var(--exit);border-color:var(--exit-soft);background:var(--exit-soft)}
+.addbadge.us{color:var(--price);border-color:var(--accent-soft);background:var(--accent-soft)}
+.addhint{font-size:11px;color:var(--ink-3);margin-top:8px;line-height:1.6}
+.custag{font-size:9.5px;font-weight:600;color:var(--add);background:var(--add-soft);border-radius:3px;padding:0 5px;margin-left:5px;vertical-align:middle}
 /* detail panel */
 .detail{padding:16px}
 .d-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--rule-2);padding-bottom:10px;margin-bottom:12px}
@@ -206,7 +217,17 @@ footer a{color:var(--ink-2)}
   <section class="idxbar" id="idx" aria-label="市場指標"></section>
 
   <section class="panel">
-    <div class="panel-h"><h2>本日のアクション</h2><span class="tools"><span class="eyebrow" id="asof"></span><button class="btn sm" id="editBtn">銘柄を編集</button></span></div>
+    <div class="panel-h"><h2>本日のアクション</h2><span class="tools"><span class="eyebrow" id="asof"></span><button class="btn sm" id="addBtn">＋ 銘柄を追加</button><button class="btn sm" id="editBtn">銘柄を編集</button></span></div>
+    <form id="addform" hidden>
+      <div class="addrow">
+        <input id="addcode" type="text" inputmode="text" autocomplete="off" placeholder="コード / ティッカー（例：7203、AAPL）" aria-label="証券コードまたはティッカー">
+        <input id="addname" type="text" autocomplete="off" placeholder="銘柄名（任意）" aria-label="銘柄名">
+        <span class="addbadge" id="addbadge"></span>
+        <button type="submit" class="btn primary sm">追加</button>
+        <button type="button" class="btn sm" id="addcancel">閉じる</button>
+      </div>
+      <div class="addhint">日本株は4桁コード（自動で <b>.T</b>／円）、米国株はティッカー（＄）を自動判定します。追加した銘柄はこの端末に保存され一覧に即表示されます。<b>ライブ株価・チャートはサーバー取得リストに載った後に自動で入ります</b>（コードをお知らせいただければ即反映します）。</div>
+    </form>
     <div class="alerts" id="alerts"><div class="alert"><span class="sev none">…</span><span>データを取得中です。</span></div></div>
     <div class="rows" id="rows"></div>
     <div class="rowhint">▸ 銘柄をクリックすると詳細分析を表示します</div>
@@ -287,7 +308,36 @@ let editMode = false;
 let removed = new Set();
 try { removed = new Set(JSON.parse(localStorage.getItem('swinglive.removed') || '[]')); } catch(_){}
 const saveRemoved = () => { try { localStorage.setItem('swinglive.removed', JSON.stringify([...removed])); } catch(_){} };
-const activeH = () => HOLDINGS.filter(h => !removed.has(h.code));
+// 閲覧者がこの端末で追加した銘柄（localStorage）。日米自動判定でサーバー側 prices.json に載れば数値が入る。
+let custom = [];
+try { custom = JSON.parse(localStorage.getItem('swinglive.custom') || '[]') || []; } catch(_){}
+const saveCustom = () => { try { localStorage.setItem('swinglive.custom', JSON.stringify(custom)); } catch(_){} };
+// コード/ティッカーから市場・通貨・Yahooシンボルを自動判定（日=.T/JPY, 米=そのまま/USD）
+function detectSym(raw){
+  let s = String(raw || '').trim().toUpperCase();
+  if (!s) return null;
+  if (s.endsWith('.T')) return {code:s.slice(0,-2), yahoo:s, cur:'JPY', market:'東証'};
+  if (/^[0-9]{4}$/.test(s) || /^[0-9]{3}[A-Z]$/.test(s)) return {code:s, yahoo:s+'.T', cur:'JPY', market:'東証'};
+  if (/^[A-Z][A-Z.\-]{0,6}$/.test(s)) return {code:s, yahoo:s, cur:'USD', market:'米国'};
+  return null;
+}
+const customH = () => custom.map(c => ({code:c.code, yahoo:c.yahoo, name:c.name||c.code, market:c.market||'', cur:c.cur||'USD', levels:{}}));
+function discoveredH(){
+  const known = new Set([...HOLDINGS.map(h=>h.code), ...custom.map(c=>c.code)]);
+  const out = [];
+  for (const [code, st] of state){
+    if (known.has(code) || !st || !st.meta) continue;
+    const m = st.meta;
+    out.push({code, yahoo:m.yahoo||code, name:m.name||code, market:m.market||'', cur:m.cur||'USD', levels:{}});
+  }
+  return out;
+}
+function allH(){
+  const seen = new Set(); const out = [];
+  for (const h of [...HOLDINGS, ...customH(), ...discoveredH()]){ if (seen.has(h.code)) continue; seen.add(h.code); out.push(h); }
+  return out;
+}
+const activeH = () => allH().filter(h => !removed.has(h.code));
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -311,18 +361,22 @@ async function refresh(){
   try { data = await loadPrices(); }
   catch(e){ dot.className = 'dot err'; st.textContent = '価格データを読み込めませんでした'; return; }
   indices = data.indices || null;
+  const stocks = data.stocks || {};
+  // 表示対象＝標準銘柄 ∪ この端末で追加した銘柄 ∪ サーバーが取得済みの銘柄（自動発見）
+  const codes = new Set([...HOLDINGS.map(h=>h.code), ...custom.map(c=>c.code), ...Object.keys(stocks)]);
   let okN = 0;
-  HOLDINGS.forEach(h => {
-    const s = data.stocks && data.stocks[h.code];
+  for (const code of codes){
+    const s = stocks[code];
     if (s && s.price != null){
-      state.set(h.code, {price:s.price, prev:s.prev, series:(s.series && s.series.length ? s.series : null), dates:(s.dates && s.dates.length ? s.dates : null), tech:s.tech||null, autoLevels:s.autoLevels||null, chart:s.chart||null, time: s.time ? new Date(s.time) : new Date(), stale:!!s.stale, error:null});
-      okN++;
-    } else { const p = state.get(h.code) || {}; state.set(h.code, {...p, error:'データ待ち'}); }
-  });
+      state.set(code, {price:s.price, prev:s.prev, series:(s.series && s.series.length ? s.series : null), dates:(s.dates && s.dates.length ? s.dates : null), tech:s.tech||null, autoLevels:s.autoLevels||null, chart:s.chart||null, meta:s.meta||null, time: s.time ? new Date(s.time) : new Date(), stale:!!s.stale, error:null});
+      if (!removed.has(code)) okN++;
+    } else { const p = state.get(code) || {}; state.set(code, {...p, meta:(s&&s.meta)||p.meta||null, error:'データ待ち'}); }
+  }
   render();
+  const total = activeH().length;
   const upd = data.updatedAt ? new Date(data.updatedAt) : null;
   if (okN === 0){ dot.className = 'dot err'; st.textContent = 'データ生成待ち（数分後に自動で入ります）'; }
-  else { dot.className = 'dot live'; st.textContent = (upd ? 'サーバー更新 ' + upd.toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '更新 ' + fmtClock(new Date())) + (okN < HOLDINGS.length ? `（${HOLDINGS.length-okN}件待ち）` : ''); }
+  else { dot.className = 'dot live'; st.textContent = (upd ? 'サーバー更新 ' + upd.toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '更新 ' + fmtClock(new Date())) + (okN < total ? `（${total-okN}件待ち）` : ''); }
 }
 const fmtClock = d => d.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 
@@ -491,9 +545,10 @@ function render(){
       ? `<div class="px num">${fmt(h,s.price)}</div><div class="ch num ${ch==null?'flat':ch>=0?'up':'down'}">${ch==null?'—':(ch>=0?'+':'')+ch.toFixed(2)+'%'}</div>${spark(s)}`
       : `<div class="px num" style="color:var(--ink-3)">—</div><div class="errnote">${esc(s.error||'取得中…')}</div>`;
     const hasD = !!(h.d || h.fund);
+    const isCustom = custom.some(c => c.code === h.code);
     const del = editMode ? `<button class="delrow" data-del="${esc(h.code)}" title="${esc(h.code)}を一覧から削除" aria-label="${esc(h.code)}を削除">✕ 削除</button>` : '';
     return `<div class="row${h.code===selected?' sel':''}${editMode?' editing':''}" data-code="${esc(h.code)}" tabindex="0" role="button" aria-label="${esc(h.code)} の詳細を表示">
-      <div class="idc"><div class="code">${esc(h.code)}${hasD?' <span class="hasd">分析</span>':''}</div><div class="nm">${esc(h.name)}</div><div class="mkt2">${esc(h.market)}・${esc(h.judge||'')}</div>${del}</div>
+      <div class="idc"><div class="code">${esc(h.code)}${hasD?' <span class="hasd">分析</span>':''}${isCustom?' <span class="custag">追加</span>':''}</div><div class="nm">${esc(h.name)}</div><div class="mkt2">${esc(h.market)}${h.judge?'・'+esc(h.judge):''}</div>${del}</div>
       <div class="pxc">${px}</div>
       <div class="lad">${ladder(h)}${chips(h)}</div>
       <div class="ratio" title="上値余地÷下値リスク（TP1基準）"><span class="num" style="color:${rt?(rt.r1<1?'var(--warn)':'var(--ink)'):'var(--ink-3)'}">${rt?r2(rt.r1):'—'}</span><small>上値÷下値${rt&&rt.r2!=null?' ② '+r2(rt.r2):''}</small></div>
@@ -528,7 +583,7 @@ function renderIdx(){
 function renderRemovedBar(){
   const el = $('#removedbar'); if (!el) return;
   if (!removed.size){ el.innerHTML = ''; return; }
-  const chips = HOLDINGS.filter(h => removed.has(h.code)).map(h =>
+  const chips = allH().filter(h => removed.has(h.code)).map(h =>
     `<button class="restore" data-restore="${esc(h.code)}" title="${esc(h.name)}を一覧に戻す">↩ ${esc(h.code)}</button>`).join('');
   el.innerHTML = `<span class="rlab">非表示 (${removed.size})：</span>${chips}<button class="restore" data-restore="__all__">すべて戻す</button>`;
 }
@@ -643,12 +698,47 @@ try { const a = localStorage.getItem('swinglive.auto'); if (a === '0') $('#auto'
 const editBtn = $('#editBtn');
 if (editBtn) editBtn.onclick = () => { editMode = !editMode; editBtn.textContent = editMode ? '完了' : '銘柄を編集'; editBtn.classList.toggle('primary', editMode); render(); };
 
+/* ---------- 銘柄の追加（日米自動判定・localStorage保存） ---------- */
+const addForm = $('#addform'), addBtn = $('#addBtn'), addCode = $('#addcode'), addName = $('#addname'), addBadge = $('#addbadge');
+function updateAddBadge(){
+  if (!addBadge) return;
+  const d = detectSym(addCode.value);
+  addBadge.className = 'addbadge' + (d ? (d.cur==='JPY'?' jp':' us') : '');
+  addBadge.textContent = d ? `${d.market}・${d.cur==='JPY'?'円':'＄'}・${d.yahoo}` : (addCode.value.trim()?'判定不可':'日/米 自動判定');
+}
+if (addBtn) addBtn.onclick = () => {
+  const open = addForm.hidden;
+  addForm.hidden = !open;
+  addBtn.classList.toggle('primary', open);
+  if (open){ updateAddBadge(); addCode.focus(); }
+};
+if (addCode) addCode.addEventListener('input', updateAddBadge);
+if ($('#addcancel')) $('#addcancel').onclick = () => { addForm.hidden = true; addBtn.classList.remove('primary'); };
+if (addForm) addForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const d = detectSym(addCode.value);
+  if (!d){ alert('コード/ティッカーを認識できません。\n日本株は4桁コード（例：7203）、米国株はティッカー（例：AAPL）を入力してください。'); addCode.focus(); return; }
+  if (HOLDINGS.some(h=>h.code===d.code) || custom.some(c=>c.code===d.code)){
+    if (removed.has(d.code)){ removed.delete(d.code); saveRemoved(); }
+    selected = d.code;
+    addForm.hidden = true; addBtn.classList.remove('primary'); addCode.value=''; addName.value='';
+    render(); refresh();
+    return;
+  }
+  custom.push({code:d.code, yahoo:d.yahoo, name:(addName.value.trim() || d.code), market:d.market, cur:d.cur});
+  saveCustom();
+  selected = d.code;
+  addCode.value=''; addName.value=''; addForm.hidden = true; addBtn.classList.remove('primary');
+  render();
+  refresh(); // サーバーに既にあれば即数値、無ければ「データ待ち」
+});
+
 $('#rows').addEventListener('click', e => {
   const del = e.target.closest('[data-del]');
   if (del){
     e.stopPropagation();
     const code = del.dataset.del;
-    const h = HOLDINGS.find(x => x.code === code);
+    const h = allH().find(x => x.code === code);
     if (!confirm(`${code}${h?'（'+h.name+'）':''} を一覧から削除しますか？\n（下の「戻す」でいつでも復元できます）`)) return;
     removed.add(code); saveRemoved();
     if (selected === code){ const first = activeH()[0]; selected = first ? first.code : null; }
@@ -675,7 +765,7 @@ if (removedbarEl) removedbarEl.addEventListener('click', e => {
   render();
 });
 
-try { $('#ver').textContent = 'build v16 (銘柄削除)'; } catch(_){}
+try { $('#ver').textContent = 'build v17 (銘柄追加/削除)'; } catch(_){}
 setInterval(renderMkt, 30000);
 render();
 refresh().then(startTimer);
