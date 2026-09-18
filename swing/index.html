@@ -463,10 +463,11 @@ function bigChart(h, s){
     // 各価格帯を上昇日=緑・下落日=赤に塗り分け（買い/売りの優勢が分かる）。POCのみ紫で強調。
     // 塗りは不透明（半透明だと重なった部分が濃く見えてムラになるため）。
     prof = ch.profile.map(b=>{ const tot=b.up+b.down; if(!tot) return ''; const y=YP(b.c)-th/2, hh=th.toFixed(1); const isPoc = ch.poc!=null && Math.abs(b.c-ch.poc) <= pStep*0.6;
-      if (isPoc) return `<rect x="${padL}" y="${y.toFixed(1)}" width="${(tot/maxT*bw).toFixed(1)}" height="${hh}" fill="${CH.poc}" opacity="0.9"/>`;
       const wu=b.up/maxT*bw, wd=b.down/maxT*bw; let r='';
       if (wu>0.05) r+=`<rect x="${padL}" y="${y.toFixed(1)}" width="${wu.toFixed(1)}" height="${hh}" fill="${CH.up}"/>`;
       if (wd>0.05) r+=`<rect x="${(padL+wu).toFixed(1)}" y="${y.toFixed(1)}" width="${wd.toFixed(1)}" height="${hh}" fill="${CH.down}"/>`;
+      // POCの棒も緑/赤に塗り、POCであることは紫の枠線＋帯＋破線ラベルで示す
+      if (isPoc) r+=`<rect x="${padL}" y="${y.toFixed(1)}" width="${((wu+wd)||1).toFixed(1)}" height="${hh}" fill="none" stroke="${CH.poc}" stroke-width="1.4"/>`;
       return r; }).join(''); }
   const pocBand = pocY!=null ? `<rect x="${padL}" y="${(pocY-th0/2).toFixed(1)}" width="${(W-padR-padL).toFixed(1)}" height="${th0.toFixed(1)}" fill="${CH.poc}" opacity="0.16"/>` : '';
   const pocEl = pocY!=null ? `<line x1="${padL}" y1="${pocY.toFixed(1)}" x2="${W-padR}" y2="${pocY.toFixed(1)}" stroke="${CH.poc}" stroke-width="1.4" stroke-dasharray="3 2" opacity="0.95"/><text x="${padL+104}" y="${(pocY-4).toFixed(1)}" class="ct" fill="${CH.poc}" style="font-weight:700">POC ${esc(fmt(h,ch.poc))}</text>` : '';
@@ -502,7 +503,7 @@ function bigChart(h, s){
   const H = mT+mH+8;
   const legend = `<div class="chart-legend">
     <span><i style="background:${CH.close}"></i>終値</span><span><i style="background:${CH.ma20}"></i>20日線</span><span><i style="background:${CH.ma50}"></i>50日線</span><span><i style="background:${CH.ma200}"></i>200日線</span>
-    <span>価格帯別出来高：<i style="background:${CH.up}"></i>上昇日(買い優勢)<i style="background:${CH.down};margin-left:2px"></i>下落日(売り優勢)</span><span><i style="background:${CH.poc}"></i>POC</span>
+    <span>価格帯別出来高：<i style="background:${CH.up}"></i>上昇日(買い優勢)<i style="background:${CH.down};margin-left:2px"></i>下落日(売り優勢)</span><span><i style="border:1.5px solid ${CH.poc};background:transparent"></i>POC（紫枠・破線）</span>
     <span><i style="background:${CH.up}"></i>上昇日<i style="background:${CH.down};margin-left:2px"></i>下落日の出来高（下段バー）</span><span><i style="background:${CH.avg}"></i>出来高20日平均</span>
   </div>`;
   return `${legend}<svg class="bigchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(h.code)} テクニカルチャート">
@@ -780,7 +781,7 @@ if (removedbarEl) removedbarEl.addEventListener('click', e => {
   render();
 });
 
-try { $('#ver').textContent = 'build v20 (帯を買い/売り色分け)'; } catch(_){}
+try { $('#ver').textContent = 'build v21 (POC帯も緑赤)'; } catch(_){}
 setInterval(renderMkt, 30000);
 render();
 refresh().then(startTimer);
