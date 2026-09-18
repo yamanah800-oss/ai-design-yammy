@@ -3,14 +3,26 @@
 // 各銘柄に、フルテクニカルチャート用の指標系列（MA・RSI・MACD・出来高・価格帯別出来高）を計算して格納する。
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const HOLDINGS = [
-  { code: '8306', yahoo: '8306.T' },
-  { code: '9702', yahoo: '9702.T' },
-  { code: 'BAC',  yahoo: 'BAC' },
-  { code: 'GL',   yahoo: 'GL' },
-  { code: 'ALL',  yahoo: 'ALL' },
-  { code: 'GOOG', yahoo: 'GOOG' },
+const BASE = [
+  { code: '8306', yahoo: '8306.T', name: '三菱UFJフィナンシャル・グループ', market: '東証プライム', cur: 'JPY' },
+  { code: '9702', yahoo: '9702.T', name: 'アイ・エス・ビー', market: '東証プライム', cur: 'JPY' },
+  { code: 'BAC',  yahoo: 'BAC',  name: 'Bank of America', market: 'NYSE', cur: 'USD' },
+  { code: 'GL',   yahoo: 'GL',   name: 'Globe Life', market: 'NYSE', cur: 'USD' },
+  { code: 'ALL',  yahoo: 'ALL',  name: 'Allstate', market: 'NYSE', cur: 'USD' },
+  { code: 'GOOG', yahoo: 'GOOG', name: 'Alphabet (Google)', market: 'NASDAQ', cur: 'USD' },
 ];
+// swing/watchlist.json の追加銘柄をマージ（同一コードは基本銘柄を優先）
+let WATCH = [];
+try {
+  const wl = JSON.parse(readFileSync('swing/watchlist.json', 'utf8'));
+  WATCH = Array.isArray(wl) ? wl : (wl.stocks || []);
+} catch (_) {}
+const HOLDINGS = [...BASE];
+for (const w of WATCH) {
+  if (!w || !w.code || !w.yahoo) continue;
+  if (HOLDINGS.some(h => h.code === w.code)) continue;
+  HOLDINGS.push({ code: String(w.code), yahoo: String(w.yahoo), name: w.name || String(w.code), market: w.market || '', cur: w.cur || 'USD' });
+}
 const INDICES = [
   { key: 'nikkei', yahoo: '^N225', label: '日経平均' },
   { key: 'sp500',  yahoo: '^GSPC', label: 'S&P500' },
@@ -122,7 +134,8 @@ for (const h of HOLDINGS) {
     const chart = buildChart(f);
     const series = (chart ? chart.close : f.closes.slice(-60).map(round));
     const tech = techFromSeries(series, f.price);
-    const s = { price: f.price, prev: f.prev, currency: f.currency, series, dates: (chart ? chart.date : f.dates.slice(-60)), tech, autoLevels: autoLevels(tech, f.price), chart, time: f.time };
+    const s = { price: f.price, prev: f.prev, currency: f.currency, series, dates: (chart ? chart.date : f.dates.slice(-60)), tech, autoLevels: autoLevels(tech, f.price), chart, time: f.time,
+      meta: { name: h.name, market: h.market, cur: h.cur || (f.currency === 'JPY' ? 'JPY' : 'USD'), yahoo: h.yahoo } };
     out.stocks[h.code] = s;
     const pct = s.prev ? ((s.price / s.prev - 1) * 100).toFixed(2) + '%' : 'n/a';
     console.log(`OK   ${h.code} = ${s.price} ${s.currency || ''}  chg=${pct}  chartN=${chart ? chart.n : 0}  ma20=${tech ? tech.ma20 : '-'} poc=${chart ? chart.poc : '-'}`);
