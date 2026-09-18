@@ -149,6 +149,16 @@ footer a{color:var(--ink-2)}
 .addbadge.us{color:var(--price);border-color:var(--accent-soft);background:var(--accent-soft)}
 .addhint{font-size:11px;color:var(--ink-3);margin-top:8px;line-height:1.6}
 .custag{font-size:9.5px;font-weight:600;color:var(--add);background:var(--add-soft);border-radius:3px;padding:0 5px;margin-left:5px;vertical-align:middle}
+/* 相場環境バッジ（トレンド/ボックス） */
+.rgm{font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;white-space:nowrap;border:1px solid transparent;vertical-align:middle}
+.rgm-up{color:var(--tp);background:var(--tp-soft);border-color:var(--tp-soft)}
+.rgm-down{color:var(--exit);background:var(--exit-soft);border-color:var(--exit-soft)}
+.rgm-box{color:var(--warn);background:var(--warn-soft);border-color:var(--warn-soft)}
+.rgm-mixed{color:var(--ink-3);background:var(--surface-2);border-color:var(--rule-2)}
+.pill.rgm-pill.rgm-up{background:var(--tp-soft);border-color:var(--tp)}
+.pill.rgm-pill.rgm-down{background:var(--exit-soft);border-color:var(--exit)}
+.pill.rgm-pill.rgm-box{background:var(--warn-soft);border-color:var(--warn)}
+.pill.rgm-pill.rgm-mixed{background:var(--surface-2);border-color:var(--ink-3)}
 /* detail panel */
 .detail{padding:16px}
 .d-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--rule-2);padding-bottom:10px;margin-bottom:12px}
@@ -424,6 +434,66 @@ function ratio(h){
   return {r1: up/down, r2: L.tp2 != null ? (L.tp2 - s.price)/down : null, up, down, up2: L.tp2 != null ? L.tp2 - s.price : null};
 }
 
+/* ---------- 相場環境の診断（トレンド / ボックス）: 日足終値から自動判定 ---------- */
+const lastNN = a => { if (!a) return null; for (let i=a.length-1;i>=0;i--) if (a[i]!=null) return a[i]; return null; };
+function regime(s){
+  const ch = s && s.chart;
+  const c = (ch && ch.close && ch.close.length>=15) ? ch.close : (s && s.series && s.series.length>=15 ? s.series : null);
+  if (!c) return null;
+  const n = c.length;
+  let sx=0, sy=0, sxx=0, sxy=0;
+  for (let i=0;i<n;i++){ sx+=i; sy+=c[i]; sxx+=i*i; sxy+=i*c[i]; }
+  const denom = (n*sxx - sx*sx) || 1;
+  const b = (n*sxy - sx*sy)/denom;      // 傾き（1営業日あたり）
+  const a = (sy - b*sx)/n;
+  const mean = sy/n;
+  let ssTot=0, ssRes=0;
+  for (let i=0;i<n;i++){ const f=a+b*i; ssRes+=(c[i]-f)*(c[i]-f); ssTot+=(c[i]-mean)*(c[i]-mean); }
+  const r2 = ssTot>0 ? Math.max(0, 1-ssRes/ssTot) : 0;     // 直線度（0〜1）
+  const slopePct = mean ? (b*(n-1))/mean*100 : 0;           // 期間全体での回帰上の値動き（%）
+  const hi=Math.max(...c), lo=Math.min(...c), last=c[n-1];
+  const bandPct = mean ? (hi-lo)/mean*100 : 0;              // 期間の値幅（%）
+  const ma20=lastNN(ch&&ch.ma20), ma50=lastNN(ch&&ch.ma50);
+  let align=0;
+  if (ma20!=null && ma50!=null){ if (last>ma20 && ma20>ma50) align=1; else if (last<ma20 && ma20<ma50) align=-1; }
+  const up = slopePct>=0, A=Math.abs(slopePct);
+  let kind, label, cls;
+  const strong = A>=8 && r2>=0.5;
+  const mild = A>=5 && r2>=0.35;
+  if (strong || (mild && align!==0 && (align>0)===up)){ kind='trend'; label = up?'上昇トレンド':'下降トレンド'; cls = up?'up':'down'; }
+  else if (r2<0.25 || A<4){ kind='box'; label='ボックス相場（レンジ）'; cls='box'; }
+  else { kind='mixed'; label = up?'弱い上昇（移行期）':'弱い下降（移行期）'; cls='mixed'; }
+  return {kind, label, cls, up, slopePct:Math.round(slopePct*10)/10, r2:Math.round(r2*100)/100, bandPct:Math.round(bandPct*10)/10, hi, lo, align, n};
+}
+const REGIME_TAG = {trend:{up:'トレンド↑',down:'トレンド↓'}, box:'ボックス', mixed:'移行期'};
+function regimeBadge(s){
+  const g = regime(s); if (!g) return '';
+  const t = g.kind==='trend' ? (g.up?REGIME_TAG.trend.up:REGIME_TAG.trend.down) : (g.kind==='box'?REGIME_TAG.box:REGIME_TAG.mixed);
+  return `<span class="rgm rgm-${g.cls}" title="回帰傾き${g.slopePct>=0?'+':''}${g.slopePct}%・R²${g.r2}・値幅${g.bandPct}%">${t}</span>`;
+}
+
+function regimeBlock(h, s){
+  const g = regime(s); if (!g) return '';
+  const tag = g.kind==='trend' ? (g.up?REGIME_TAG.trend.up:REGIME_TAG.trend.down) : (g.kind==='box'?REGIME_TAG.box:REGIME_TAG.mixed);
+  const how = {
+    trend: g.up
+      ? '順張り優勢。押し目（移動平均線や直近安値）を買い、移動平均線を終値で割ったら手仕舞い。新規の逆張り売りは分が悪い。'
+      : '下降トレンド。戻り売りが優勢で、新規の押し目買いは慎重に。トレンド転換（移動平均線の上抜け）を確認してから。',
+    box: 'レンジの下限に近づいたら買い・上限に近づいたら利確／売りが基本。値幅を抜けた（ブレイクした）方向にはついていく。'
+       + `直近の下限は約${fmt(h,g.lo)}、上限は約${fmt(h,g.hi)}。`,
+    mixed: '方向感が弱い移行期。トレンド確定（直線度の上昇・移動平均線の整列）か、レンジのブレイクを待つのが無難。'
+  }[g.kind];
+  return `<h3 class="d-h">相場環境の診断（自動判定）</h3>
+    <div class="pills">
+      <span class="pill rgm-pill rgm-${g.cls}"><b>判定：${tag.replace('↑','（上昇）').replace('↓','（下降）')}</b></span>
+      <span class="pill">回帰トレンド <b class="num">${g.slopePct>=0?'+':''}${g.slopePct}%</b><small>（期間）</small></span>
+      <span class="pill">直線度 R² <b class="num">${g.r2}</b></span>
+      <span class="pill">値幅 <b class="num">${g.bandPct}%</b></span>
+    </div>
+    <p class="d-note" style="margin-top:8px">${how}</p>
+    <p class="d-note" style="margin-top:4px;color:var(--ink-3)">判定ロジック：直近約${g.n}営業日の終値を回帰分析。傾きが大きく直線度R²が高ければ<b>トレンド</b>、傾きが小さい／R²が低ければ<b>ボックス</b>と自動判定（移動平均の整列も加味）。<b>日足終値からの機械的判定で、売買推奨ではありません。</b></p>`;
+}
+
 /* ---------- render pieces ---------- */
 function spark(s){
   if (!s || !s.series || s.series.length < 2) return '';
@@ -564,7 +634,7 @@ function render(){
     const isCustom = custom.some(c => c.code === h.code);
     const del = editMode ? `<button class="delrow" data-del="${esc(h.code)}" title="${esc(h.code)}を一覧から削除" aria-label="${esc(h.code)}を削除">✕ 削除</button>` : '';
     return `<div class="row${h.code===selected?' sel':''}${editMode?' editing':''}" data-code="${esc(h.code)}" tabindex="0" role="button" aria-label="${esc(h.code)} の詳細を表示">
-      <div class="idc"><div class="code">${esc(h.code)}${hasD?' <span class="hasd">分析</span>':''}${isCustom?' <span class="custag">追加</span>':''}</div><div class="nm">${esc(h.name)}</div><div class="mkt2">${esc(h.market)}${h.judge?'・'+esc(h.judge):''}</div>${del}</div>
+      <div class="idc"><div class="code">${esc(h.code)}${hasD?' <span class="hasd">分析</span>':''}${isCustom?' <span class="custag">追加</span>':''}</div><div class="nm">${esc(h.name)}</div><div class="mkt2">${esc(h.market)}${h.judge?'・'+esc(h.judge):''} ${regimeBadge(s)}</div>${del}</div>
       <div class="pxc">${px}</div>
       <div class="lad">${ladder(h)}${chips(h)}</div>
       <div class="ratio" title="上値余地(TP1−現在) ÷ 下値リスク(現在−SL)"><span class="num" style="color:${rt?(rt.r1<1?'var(--warn)':'var(--ink)'):'var(--ink-3)'}">${rt?r2(rt.r1):'—'}</span><small>${rt?`上値<b class="up">+${esc(fmt(h,rt.up))}</b> / 下値<b class="down">−${esc(fmt(h,rt.down))}</b>`:'上値÷下値'}</small></div>
@@ -701,7 +771,7 @@ function renderDetail(){
       <div><div class="d-code">${esc(h.code)} <span class="d-name">${esc(h.name)}</span></div>
       <div class="d-sub">${esc(h.market)}${d&&d.strength?' ・ '+esc(d.strength):''}${d&&d.trend?' ・ '+esc(d.trend):''}</div></div>
       <div class="d-px">${price!=null?fmt(h,price):'—'} ${chHtml}</div>
-    </div>${bigChart(h,s)}${body}`;
+    </div>${bigChart(h,s)}${regimeBlock(h,s)}${body}`;
 }
 
 /* ---------- boot / loop ---------- */
@@ -781,7 +851,7 @@ if (removedbarEl) removedbarEl.addEventListener('click', e => {
   render();
 });
 
-try { $('#ver').textContent = 'build v21 (POC帯も緑赤)'; } catch(_){}
+try { $('#ver').textContent = 'build v22 (トレンド/ボックス診断)'; } catch(_){}
 setInterval(renderMkt, 30000);
 render();
 refresh().then(startTimer);
