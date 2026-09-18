@@ -125,6 +125,18 @@ footer a{color:var(--ink-2)}
 .row.sel{background:var(--accent-soft)}
 .hasd{font-size:9.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:3px;padding:0 5px;margin-left:5px;vertical-align:middle}
 .rowhint{font-size:11px;color:var(--ink-3);padding:8px 16px}
+/* 編集モード：削除ボタン & 復元バー */
+.btn.sm{padding:4px 10px;font-size:12px}
+.tools{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap}
+.row.editing{cursor:default}
+.row.editing:hover{background:transparent}
+.delrow{margin-top:6px;border:1px solid var(--exit);background:var(--exit-soft);color:var(--exit);border-radius:5px;padding:3px 9px;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.delrow:hover{background:var(--exit);color:#fff}
+#removedbar:empty{display:none}
+#removedbar{padding:10px 16px;border-top:1px dashed var(--rule);display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;color:var(--ink-3)}
+#removedbar .rlab{font-weight:600}
+.restore{border:1px solid var(--rule);background:var(--surface-2);border-radius:999px;padding:2px 10px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:var(--mono)}
+.restore:hover{border-color:var(--accent);color:var(--accent)}
 /* detail panel */
 .detail{padding:16px}
 .d-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--rule-2);padding-bottom:10px;margin-bottom:12px}
@@ -194,10 +206,11 @@ footer a{color:var(--ink-2)}
   <section class="idxbar" id="idx" aria-label="市場指標"></section>
 
   <section class="panel">
-    <div class="panel-h"><h2>本日のアクション</h2><span class="eyebrow" id="asof"></span></div>
+    <div class="panel-h"><h2>本日のアクション</h2><span class="tools"><span class="eyebrow" id="asof"></span><button class="btn sm" id="editBtn">銘柄を編集</button></span></div>
     <div class="alerts" id="alerts"><div class="alert"><span class="sev none">…</span><span>データを取得中です。</span></div></div>
     <div class="rows" id="rows"></div>
     <div class="rowhint">▸ 銘柄をクリックすると詳細分析を表示します</div>
+    <div id="removedbar"></div>
   </section>
 
   <section class="panel detail" id="detailwrap" hidden></section>
@@ -270,6 +283,11 @@ const state = new Map();   // code -> {price, prev, series, time, error}
 let timer = null;
 let indices = null;                 // market indices from prices.json
 let selected = HOLDINGS[0].code;    // detail panel target
+let editMode = false;
+let removed = new Set();
+try { removed = new Set(JSON.parse(localStorage.getItem('swinglive.removed') || '[]')); } catch(_){}
+const saveRemoved = () => { try { localStorage.setItem('swinglive.removed', JSON.stringify([...removed])); } catch(_){} };
+const activeH = () => HOLDINGS.filter(h => !removed.has(h.code));
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -453,7 +471,7 @@ function render(){
   renderMkt();
   // alerts
   const all = [];
-  for (const h of HOLDINGS){ for (const a of alertsFor(h)) all.push({...a, code:h.code, name:h.name}); }
+  for (const h of activeH()){ for (const a of alertsFor(h)) all.push({...a, code:h.code, name:h.name}); }
   all.sort((a,b)=>a.rank-b.rank);
   const lab = {critical:'SL・警戒', warning:'注意', good:'TP'};
   $('#alerts').innerHTML = all.length
@@ -461,10 +479,11 @@ function render(){
     : `<div class="alert"><span class="sev none">なし</span><span>ラインへの到達・接近はありません。</span></div>`;
   // as-of (latest quote time)
   let latest = null;
-  for (const h of HOLDINGS){ const s = state.get(h.code); if (s && s.time && (!latest || s.time > latest)) latest = s.time; }
+  for (const h of activeH()){ const s = state.get(h.code); if (s && s.time && (!latest || s.time > latest)) latest = s.time; }
   $('#asof').textContent = latest ? '現在値 ' + latest.toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) + ' 時点' : '';
   // rows
-  $('#rows').innerHTML = HOLDINGS.map(h => {
+  const rows = activeH();
+  $('#rows').innerHTML = rows.length ? rows.map(h => {
     const s = state.get(h.code) || {};
     const ch = (s.price != null && s.prev) ? (s.price/s.prev-1)*100 : null;
     const rt = ratio(h);
@@ -472,13 +491,15 @@ function render(){
       ? `<div class="px num">${fmt(h,s.price)}</div><div class="ch num ${ch==null?'flat':ch>=0?'up':'down'}">${ch==null?'—':(ch>=0?'+':'')+ch.toFixed(2)+'%'}</div>${spark(s)}`
       : `<div class="px num" style="color:var(--ink-3)">—</div><div class="errnote">${esc(s.error||'取得中…')}</div>`;
     const hasD = !!(h.d || h.fund);
-    return `<div class="row${h.code===selected?' sel':''}" data-code="${esc(h.code)}" tabindex="0" role="button" aria-label="${esc(h.code)} の詳細を表示">
-      <div class="idc"><div class="code">${esc(h.code)}${hasD?' <span class="hasd">分析</span>':''}</div><div class="nm">${esc(h.name)}</div><div class="mkt2">${esc(h.market)}・${esc(h.judge||'')}</div></div>
+    const del = editMode ? `<button class="delrow" data-del="${esc(h.code)}" title="${esc(h.code)}を一覧から削除" aria-label="${esc(h.code)}を削除">✕ 削除</button>` : '';
+    return `<div class="row${h.code===selected?' sel':''}${editMode?' editing':''}" data-code="${esc(h.code)}" tabindex="0" role="button" aria-label="${esc(h.code)} の詳細を表示">
+      <div class="idc"><div class="code">${esc(h.code)}${hasD?' <span class="hasd">分析</span>':''}</div><div class="nm">${esc(h.name)}</div><div class="mkt2">${esc(h.market)}・${esc(h.judge||'')}</div>${del}</div>
       <div class="pxc">${px}</div>
       <div class="lad">${ladder(h)}${chips(h)}</div>
       <div class="ratio" title="上値余地÷下値リスク（TP1基準）"><span class="num" style="color:${rt?(rt.r1<1?'var(--warn)':'var(--ink)'):'var(--ink-3)'}">${rt?r2(rt.r1):'—'}</span><small>上値÷下値${rt&&rt.r2!=null?' ② '+r2(rt.r2):''}</small></div>
     </div>`;
-  }).join('');
+  }).join('') : `<div class="empty" style="padding:20px;color:var(--ink-3)">表示できる銘柄がありません。下の「戻す」で復元できます。</div>`;
+  renderRemovedBar();
   renderIdx();
   renderDetail();
 }
@@ -503,10 +524,22 @@ function renderIdx(){
   }).join('');
 }
 
+/* ---------- 削除した銘柄の復元バー ---------- */
+function renderRemovedBar(){
+  const el = $('#removedbar'); if (!el) return;
+  if (!removed.size){ el.innerHTML = ''; return; }
+  const chips = HOLDINGS.filter(h => removed.has(h.code)).map(h =>
+    `<button class="restore" data-restore="${esc(h.code)}" title="${esc(h.name)}を一覧に戻す">↩ ${esc(h.code)}</button>`).join('');
+  el.innerHTML = `<span class="rlab">非表示 (${removed.size})：</span>${chips}<button class="restore" data-restore="__all__">すべて戻す</button>`;
+}
+
 /* ---------- detail panel (元アプリの深い分析) ---------- */
 function renderDetail(){
   const wrap = $('#detailwrap'); if (!wrap) return;
-  const h = HOLDINGS.find(x => x.code === selected) || HOLDINGS[0];
+  const act = activeH();
+  if (!act.length){ wrap.hidden = true; wrap.innerHTML = ''; return; }
+  const h = act.find(x => x.code === selected) || act[0];
+  selected = h.code;
   const s = state.get(h.code) || {};
   const d = h.d;
   const price = s.price != null ? s.price : null;
@@ -607,18 +640,42 @@ $('#refresh').onclick = () => refresh();
 $('#auto').onchange = () => { try{ localStorage.setItem('swinglive.auto', $('#auto').checked?'1':'0'); }catch(_){} startTimer(); };
 try { const a = localStorage.getItem('swinglive.auto'); if (a === '0') $('#auto').checked = false; } catch(_){}
 
+const editBtn = $('#editBtn');
+if (editBtn) editBtn.onclick = () => { editMode = !editMode; editBtn.textContent = editMode ? '完了' : '銘柄を編集'; editBtn.classList.toggle('primary', editMode); render(); };
+
 $('#rows').addEventListener('click', e => {
+  const del = e.target.closest('[data-del]');
+  if (del){
+    e.stopPropagation();
+    const code = del.dataset.del;
+    const h = HOLDINGS.find(x => x.code === code);
+    if (!confirm(`${code}${h?'（'+h.name+'）':''} を一覧から削除しますか？\n（下の「戻す」でいつでも復元できます）`)) return;
+    removed.add(code); saveRemoved();
+    if (selected === code){ const first = activeH()[0]; selected = first ? first.code : null; }
+    render();
+    return;
+  }
   const r = e.target.closest('.row[data-code]'); if (!r) return;
+  if (editMode) return;
   selected = r.dataset.code;
   $('#rows').querySelectorAll('.row').forEach(x => x.classList.toggle('sel', x.dataset.code === selected));
   renderDetail();
   $('#detailwrap').scrollIntoView({behavior:'smooth', block:'nearest'});
 });
 $('#rows').addEventListener('keydown', e => {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.row[data-code]')){ e.preventDefault(); e.target.closest('.row').click(); }
+  if ((e.key === 'Enter' || e.key === ' ') && !editMode && e.target.closest('.row[data-code]')){ e.preventDefault(); e.target.closest('.row').click(); }
+});
+const removedbarEl = $('#removedbar');
+if (removedbarEl) removedbarEl.addEventListener('click', e => {
+  const b = e.target.closest('[data-restore]'); if (!b) return;
+  const code = b.dataset.restore;
+  if (code === '__all__') removed.clear(); else removed.delete(code);
+  saveRemoved();
+  if (selected == null){ const first = activeH()[0]; selected = first ? first.code : null; }
+  render();
 });
 
-try { $('#ver').textContent = 'build v15 (POC強調)'; } catch(_){}
+try { $('#ver').textContent = 'build v16 (銘柄削除)'; } catch(_){}
 setInterval(renderMkt, 30000);
 render();
 refresh().then(startTimer);
