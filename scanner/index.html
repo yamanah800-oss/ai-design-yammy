@@ -6,18 +6,18 @@
 <meta name="theme-color" content="#080B12">
 <link rel="icon" type="image/png" href="../favicon.png">
 <meta property="og:title" content="青天井スキャナー | 日本株ブレイクアウト検出ダッシュボード">
-<meta property="og:description" content="しこり壁を大商いで突き抜けた銘柄を100点で採点し、8つの相場ステージに分類。">
+<meta property="og:description" content="しこり壁を大商いで突き抜けた銘柄を100点で採点し8ステージに分類。Yahoo Finance実株価で自動更新。">
 <meta property="og:type" content="website">
 </head>
 <body>
 <title>青天井スキャナー</title>
-<meta name="description" content="日本株ブレイクアウト戦略。しこり壁を大商いで突き抜けた銘柄を100点満点で採点し、8つの相場ステージに分類するダッシュボード。">
+<meta name="description" content="日本株ブレイクアウト戦略。しこり壁を大商いで突き抜けた銘柄を100点満点で採点し、8つの相場ステージに分類するダッシュボード。Yahoo Financeの実株価で自動更新。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap">
 <style>
 :root{
-  --bg:#080B12; --bg-grad:#0A0F1A; --panel:#0F1623; --panel-2:#131C2C; --panel-3:#182234;
+  --bg:#080B12; --panel:#0F1623; --panel-2:#131C2C; --panel-3:#182234;
   --line:#1E2A40; --line-2:#26344E; --ink:#E8EEF9; --ink-2:#9DACC6; --ink-3:#5E6E8A; --ink-4:#3E4C66;
   --cyan:#22D3EE; --cyan-dim:#0E4A55; --cyan-soft:#0C2A33;
   --amber:#F6B01E; --amber-dim:#4A3708; --amber-soft:#2B2008;
@@ -36,14 +36,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
                    radial-gradient(1000px 500px at 100% 0%, #14243d 0%, rgba(20,36,61,0) 55%);
   background-attachment:fixed;}
 .wrap{max-width:1440px;margin:0 auto;padding-block:22px 64px;padding-inline:16px}
-.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 
-/* ---------- Header ---------- */
 .head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;
-  padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:20px}
+  padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:18px}
 .brand{display:flex;gap:14px;align-items:center}
-.mark{width:44px;height:44px;border-radius:11px;flex:0 0 auto;position:relative;
+.mark{width:44px;height:44px;border-radius:11px;flex:0 0 auto;
   background:linear-gradient(160deg,#0d2440,#0a1524);border:1px solid var(--line-2);
   display:grid;place-items:center;box-shadow:var(--shadow)}
 .mark svg{width:26px;height:26px;display:block}
@@ -64,19 +62,27 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
 .btn.primary:hover{background:linear-gradient(180deg,#1293aa,#0c6f84)}
 .btn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 
-/* ---------- Summary ---------- */
+.srcbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:16px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 14px;font-size:12px}
+.srcbar .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;position:relative}
+.srcbar .dot.live{background:var(--up);box-shadow:0 0 0 3px rgba(47,217,138,.18)}
+.srcbar .dot.demo{background:var(--amber);box-shadow:0 0 0 3px rgba(246,176,30,.16)}
+.srcbar .dot.loading{background:var(--cyan);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+.srcbar .lbl{font-weight:700}
+.srcbar .meta{color:var(--ink-3);font-family:var(--mono)}
+.srcbar .sep{color:var(--ink-4)}
+.srcbar .warn{color:var(--amber)}
+
 .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 17px;
-  position:relative;overflow:hidden}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 17px;position:relative;overflow:hidden}
 .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--edge,var(--ink-4))}
 .stat .k{font-size:11px;color:var(--ink-2);letter-spacing:.04em;font-weight:500}
-.stat .v{font-family:var(--mono);font-size:28px;font-weight:600;margin-top:5px;line-height:1;
-  font-variant-numeric:tabular-nums}
+.stat .v{font-family:var(--mono);font-size:28px;font-weight:600;margin-top:5px;line-height:1;font-variant-numeric:tabular-nums}
 .stat .u{font-size:12px;color:var(--ink-3);font-family:var(--sans);font-weight:500;margin-left:3px}
 .stat.c-scan{--edge:var(--ink-3)} .stat.c-break{--edge:var(--s-breakout)}
 .stat.c-high{--edge:var(--amber)} .stat.c-avg{--edge:var(--cyan)}
 
-/* ---------- Toolbar ---------- */
 .toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{font-size:12px;font-weight:600;cursor:pointer;border-radius:100px;padding:6px 13px;
@@ -85,39 +91,31 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
 .chip:hover{color:var(--ink);border-color:#33456a}
 .chip .dot{width:8px;height:8px;border-radius:50%;background:var(--c,var(--ink-3))}
 .chip .cnt{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
-.chip[aria-pressed="true"]{background:var(--panel-3);color:var(--ink);border-color:#3a4d73;
-  box-shadow:0 0 0 1px rgba(34,211,238,.12)}
+.chip[aria-pressed="true"]{background:var(--panel-3);color:var(--ink);border-color:#3a4d73;box-shadow:0 0 0 1px rgba(34,211,238,.12)}
 .chip:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-.updated{font-size:11.5px;color:var(--ink-3);font-family:var(--mono)}
 
-/* ---------- Layout ---------- */
 .main{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:start}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
-.card-h{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;
-  border-bottom:1px solid var(--line)}
+.card-h{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
 .card-h h2{margin:0;font-size:13px;font-weight:700;letter-spacing:.02em}
 .card-h .meta{font-size:11px;color:var(--ink-3);font-family:var(--mono)}
 
-/* ---------- Table ---------- */
 .tscroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;min-width:640px}
 thead th{position:sticky;top:0;background:var(--panel-2);z-index:2;font-size:10.5px;font-weight:600;
-  color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;text-align:left;
-  padding:9px 12px;border-bottom:1px solid var(--line)}
+  color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:9px 12px;border-bottom:1px solid var(--line)}
 thead th.r,tbody td.r{text-align:right}
 tbody td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
 tbody tr{cursor:pointer;transition:background .12s}
 tbody tr:hover{background:var(--panel-2)}
 tbody tr[aria-selected="true"]{background:linear-gradient(90deg,rgba(34,211,238,.10),rgba(34,211,238,0) 60%)}
 tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cyan)}
-.rank{font-family:var(--mono);color:var(--ink-3);font-size:12px;width:26px}
+.rank{font-family:var(--mono);color:var(--ink-3);font-size:12px}
 .rank.top{color:var(--amber)}
 .code{font-family:var(--mono);font-weight:600;font-size:13px}
 .nm{color:var(--ink-2);font-size:11.5px;margin-top:1px}
-.badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;
-  padding:4px 9px;border-radius:100px;white-space:nowrap;
-  color:var(--sc);background:color-mix(in srgb,var(--sc) 14%,transparent);
-  border:1px solid color-mix(in srgb,var(--sc) 34%,transparent)}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:100px;white-space:nowrap;
+  color:var(--sc);background:color-mix(in srgb,var(--sc) 14%,transparent);border:1px solid color-mix(in srgb,var(--sc) 34%,transparent)}
 .badge .bd{width:7px;height:7px;border-radius:50%;background:var(--sc)}
 .gauge{display:flex;align-items:center;gap:9px;justify-content:flex-end}
 .gauge .track{width:64px;height:7px;border-radius:100px;background:var(--panel-3);overflow:hidden;border:1px solid var(--line)}
@@ -125,57 +123,48 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 .gauge .sc{font-family:var(--mono);font-weight:600;font-size:14px;min-width:44px;text-align:right}
 .mini{font-size:11px;color:var(--ink-3);font-family:var(--mono);margin-top:2px}
 .stopcell{color:var(--down);font-family:var(--mono);font-weight:600;font-size:12.5px}
-.badgeflag{font-size:9.5px;color:var(--amber);border:1px solid var(--amber-dim);border-radius:5px;
-  padding:1px 5px;margin-left:6px;letter-spacing:.02em;background:var(--amber-soft)}
+.badgeflag{font-size:9.5px;color:var(--amber);border:1px solid var(--amber-dim);border-radius:5px;padding:1px 5px;margin-left:6px;letter-spacing:.02em;background:var(--amber-soft)}
+.screenflag{font-size:9.5px;color:var(--up);border:1px solid color-mix(in srgb,var(--up) 40%,transparent);border-radius:5px;padding:1px 5px;margin-left:6px;background:var(--up-soft)}
 
-/* ---------- Inspector ---------- */
 .insp{position:sticky;top:12px;display:flex;flex-direction:column;gap:16px}
-.insp .empty{padding:40px 20px;text-align:center;color:var(--ink-3);font-size:13px}
 .ihead{padding:16px 18px;border-bottom:1px solid var(--line)}
 .ihead .row1{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .ihead .t-code{font-family:var(--mono);font-size:18px;font-weight:700}
 .ihead .t-name{color:var(--ink-2);font-size:13px}
 .ihead .t-price{font-family:var(--mono);font-size:24px;font-weight:600;text-align:right;line-height:1.1}
-.ihead .t-chg{font-size:11px;color:var(--ink-3);font-family:var(--mono);text-align:right}
+.ihead .t-chg{font-size:11px;font-family:var(--mono);text-align:right;margin-top:2px}
+.ihead .t-chg.up{color:var(--up)} .ihead .t-chg.down{color:var(--down)}
 .ihead .r2{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
-.bigscore{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--amber);
-  padding:4px 10px;border:1px solid var(--amber-dim);border-radius:8px;background:var(--amber-soft)}
+.bigscore{font-family:var(--mono);font-size:15px;font-weight:700;padding:4px 10px;border-radius:8px}
 .isec{padding:16px 18px;border-top:1px solid var(--line)}
 .isec h3{margin:0 0 12px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
-
-/* profile chart */
 .chartwrap{display:block;width:100%}
 .chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;font-size:10.5px;color:var(--ink-2)}
 .chart-legend span{display:inline-flex;align-items:center;gap:5px}
-.chart-legend i{width:11px;height:3px;border-radius:2px;display:inline-block}
+.chart-legend i{width:12px;height:3px;border-radius:2px;display:inline-block}
+.chart-legend i.dash{background:repeating-linear-gradient(90deg,currentColor 0 3px,transparent 3px 6px)}
 .stopbox{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .stopbox .b{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .stopbox .b .l{font-size:10.5px;color:var(--ink-3)}
 .stopbox .b .n{font-family:var(--mono);font-size:17px;font-weight:600;margin-top:3px}
 .stopbox .b.stop .n{color:var(--down)}
-
-/* score breakdown */
-.grp{margin-bottom:14px}
-.grp:last-child{margin-bottom:0}
+.grp{margin-bottom:14px} .grp:last-child{margin-bottom:0}
 .grp .gh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
 .grp .gh .gt{font-size:12px;font-weight:600}
 .grp .gh .gv{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
 .grp .gh .gv b{color:var(--ink);font-weight:600}
+.grp .note{font-size:11px;color:var(--ink-3);background:var(--panel-2);border:1px dashed var(--line-2);border-radius:8px;padding:9px 11px;line-height:1.5}
 .item{display:grid;grid-template-columns:1fr auto;gap:5px 10px;align-items:center;margin-bottom:7px}
 .item .il{font-size:11.5px;color:var(--ink-2)}
 .item .iv{font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
 .item .iv b{color:var(--ink)}
 .item .bar{grid-column:1/-1;height:5px;border-radius:100px;background:var(--panel-3);overflow:hidden;border:1px solid var(--line)}
 .item .bar i{display:block;height:100%;border-radius:100px;background:var(--bc,var(--cyan))}
-
-/* checklist */
 .check{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-.check li{display:flex;gap:11px;align-items:flex-start;padding:11px 12px;border:1px solid var(--line);
-  border-radius:10px;background:var(--panel-2);cursor:pointer;transition:.14s}
+.check li{display:flex;gap:11px;align-items:flex-start;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);cursor:pointer;transition:.14s}
 .check li:hover{border-color:#33456a}
 .check li[aria-checked="true"]{background:var(--up-soft);border-color:color-mix(in srgb,var(--up) 40%,transparent)}
-.check .cb{width:19px;height:19px;border-radius:6px;border:1.5px solid var(--line-2);flex:0 0 auto;
-  display:grid;place-items:center;margin-top:1px;transition:.14s}
+.check .cb{width:19px;height:19px;border-radius:6px;border:1.5px solid var(--line-2);flex:0 0 auto;display:grid;place-items:center;margin-top:1px;transition:.14s}
 .check li[aria-checked="true"] .cb{background:var(--up);border-color:var(--up)}
 .check .cb svg{width:12px;height:12px;opacity:0;transition:.14s}
 .check li[aria-checked="true"] .cb svg{opacity:1}
@@ -183,32 +172,24 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 .check .ct .th{font-weight:600;color:var(--ink)}
 .check .ct .td{color:var(--ink-3);font-size:11px;margin-top:2px}
 
-/* ---------- Modal / Simulator ---------- */
-.overlay{position:fixed;inset:0;background:rgba(4,7,12,.72);backdrop-filter:blur(3px);
-  display:grid;place-items:center;padding:16px;z-index:50}
+.overlay{position:fixed;inset:0;background:rgba(4,7,12,.72);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px;z-index:50}
 .overlay[hidden]{display:none}
-.modal{background:var(--panel);border:1px solid var(--line-2);border-radius:18px;
-  width:min(760px,100%);max-height:90vh;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.6)}
-.modal-h{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;
-  border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
+.modal{background:var(--panel);border:1px solid var(--line-2);border-radius:18px;width:min(760px,100%);max-height:90vh;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.modal-h{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
 .modal-h h2{margin:0;font-size:15px;font-weight:700}
 .modal-h p{margin:2px 0 0;font-size:11.5px;color:var(--ink-3)}
-.xbtn{width:32px;height:32px;border-radius:8px;border:1px solid var(--line-2);background:var(--panel-2);
-  color:var(--ink-2);cursor:pointer;display:grid;place-items:center;font-size:18px;line-height:1}
+.xbtn{width:32px;height:32px;border-radius:8px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--ink-2);cursor:pointer;display:grid;place-items:center;font-size:18px;line-height:1}
 .xbtn:hover{background:var(--panel-3);color:var(--ink)}
 .modal-b{padding:18px 20px;display:grid;grid-template-columns:1.1fr .9fr;gap:20px}
 .form{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
 .field{display:flex;flex-direction:column;gap:5px}
-.field.full{grid-column:1/-1}
 .field label{font-size:11px;color:var(--ink-2);font-weight:500}
-.field input[type=number]{font-family:var(--mono);font-size:13px;background:var(--panel-2);
-  border:1px solid var(--line-2);border-radius:8px;padding:8px 10px;color:var(--ink);width:100%}
+.field input[type=number]{font-family:var(--mono);font-size:13px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:8px 10px;color:var(--ink);width:100%}
 .field input:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 2px rgba(34,211,238,.15)}
 .toggles{display:flex;gap:16px;grid-column:1/-1;flex-wrap:wrap}
 .toggle{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--ink-2);cursor:pointer}
 .toggle input{width:16px;height:16px;accent-color:var(--cyan)}
-.simout{background:var(--panel-2);border:1px solid var(--line);border-radius:14px;padding:16px;
-  display:flex;flex-direction:column;gap:14px;align-self:start;position:sticky;top:12px}
+.simout{background:var(--panel-2);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;align-self:start;position:sticky;top:12px}
 .simout .bignum{font-family:var(--mono);font-size:44px;font-weight:700;line-height:1;text-align:center}
 .simout .biglbl{text-align:center;font-size:11px;color:var(--ink-3);margin-top:-6px}
 .simout .simbadge{display:flex;justify-content:center}
@@ -221,32 +202,19 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 .simbars .sb .bar{flex:1;height:6px;border-radius:100px;background:var(--panel-3);overflow:hidden;border:1px solid var(--line)}
 .simbars .sb .bar i{display:block;height:100%;border-radius:100px}
 .simbars .sb .n{width:52px;text-align:right;font-family:var(--mono);color:var(--ink-2)}
-
-/* toast */
-.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
-  background:var(--panel-3);border:1px solid var(--line-2);color:var(--ink);font-size:13px;font-weight:600;
-  padding:11px 18px;border-radius:100px;box-shadow:0 12px 40px rgba(0,0,0,.5);
-  opacity:0;pointer-events:none;transition:.28s;z-index:60;display:flex;align-items:center;gap:9px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--panel-3);border:1px solid var(--line-2);color:var(--ink);font-size:13px;font-weight:600;padding:11px 18px;border-radius:100px;box-shadow:0 12px 40px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.28s;z-index:60;display:flex;align-items:center;gap:9px}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast .ic{color:var(--up)}
-
-.foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);
-  font-size:11px;color:var(--ink-3);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.foot .disc{max-width:640px;line-height:1.6}
+.foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);font-size:11px;color:var(--ink-3);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.foot .disc{max-width:660px;line-height:1.6}
 
 @media (max-width:1024px){
-  .main{grid-template-columns:1fr}
-  .insp{position:static}
+  .main{grid-template-columns:1fr}.insp{position:static}
   .summary{grid-template-columns:repeat(2,1fr)}
-  .modal-b{grid-template-columns:1fr}
-  .simout{position:static}
+  .modal-b{grid-template-columns:1fr}.simout{position:static}
 }
-@media (max-width:560px){
-  .form{grid-template-columns:1fr}
-  .brand h1{font-size:18px}
-  .stat .v{font-size:24px}
-}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:560px){.form{grid-template-columns:1fr}.brand h1{font-size:18px}.stat .v{font-size:24px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.srcbar .dot.loading{animation:none}}
 </style>
 
 <div class="wrap">
@@ -281,11 +249,14 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     </div>
   </header>
 
+  <div class="srcbar" id="srcbar" aria-live="polite">
+    <span class="dot loading"></span><span class="lbl">データ読み込み中…</span>
+  </div>
+
   <section class="summary" id="summary" aria-label="サマリー統計"></section>
 
   <div class="toolbar">
     <div class="chips" id="chips" role="group" aria-label="ステージフィルタ"></div>
-    <div class="updated" id="updated"></div>
   </div>
 
   <div class="main">
@@ -306,9 +277,9 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 
   <footer class="foot">
     <div class="disc">
-      <b>青天井スキャナー</b> ／ 直近250営業日・40価格帯の出来高プロファイルからしこり壁を測定。直近10営業日はブレイク当日の壁ズレ防止のため出来高計算から除外。表示データは動作検証用のプリセットです。投資判断は自己責任で行ってください。
+      <b>青天井スキャナー</b> ／ 直近250営業日・40価格帯の出来高プロファイルからしこり壁を測定（直近10営業日は壁ズレ防止のため出来高計算から除外）。実データは Yahoo Finance の日足を GitHub Actions で自動取得。信用残データ未接続のため<b>需給なし換算</b>（条件1＋条件3＝75点を100点換算）で採点。投資判断は自己責任で行ってください。
     </div>
-    <div class="mono" id="foot-r"></div>
+    <div class="num" id="foot-r"></div>
   </footer>
 </div>
 
@@ -346,9 +317,8 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 <script>
 (function(){
   "use strict";
-  var TODAY = "2026-09-21";
+  var TODAY = new Date().toISOString().slice(0,10);
 
-  /* ===== ステージ定義 ===== */
   var STAGES = {
     breakout:{label:"ブレイク確定",   color:"#2FD98A"},
     support: {label:"壁→サポート転換", color:"#22D3EE"},
@@ -361,40 +331,15 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
   };
   var POS_SCORE = {breakout:15,support:15,testing:13,approach:11,bluesky:3,weak:8,above:8,out:0};
 
-  /* ===== 採点ロジック（仕様準拠） ===== */
   function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
-  // 条件1
-  function wallThickness(conc){return clamp((conc-8)/(25-8)*15,0,15);}        // 15点
-  function boxStay(ratio){return ratio>=50?10:ratio/50*10;}                    // 10点
-  // 条件2
-  function creditBuy(x){                                                       // 10点
-    if(x<=-20)return 10;
-    if(x<=0)  return 10+(x+20)/20*(4-10);
-    if(x<20)  return 4-(x/20)*4;
-    return 0;
-  }
-  function creditSell(x){                                                      // 7点
-    if(x<0)return 0;
-    if(x>=30)return 7;
-    return 2+x/30*(7-2);
-  }
-  function creditRatio(r,gyaku){                                               // 8点
-    if(gyaku)return 8;
-    if(r<=1.0)return 8;
-    if(r<=2.0)return 6;
-    if(r<=4.0)return 3;
-    return 0;
-  }
-  // 条件3
-  function volPrevScore(r){return r>=3?12:r>=2?9:r>=1.5?5:r>=1.2?2:0;}         // 12点
-  function vol20Score(r){return r>=3?13:r>=2?9:r>=1.5?5:r>=1.2?2:0;}          // 13点
-  function breakCloseScore(close,wh,wl){                                       // 10点
-    if(close>wh)return 10;
-    var mid=(wh+wl)/2;
-    if(close>=mid && close<=wh)return 5;
-    return 0;
-  }
-  // ステージ分類
+  function wallThickness(c){return clamp((c-8)/(25-8)*15,0,15);}
+  function boxStay(r){return r>=50?10:r/50*10;}
+  function creditBuy(x){ if(x<=-20)return 10; if(x<=0)return 10+(x+20)/20*(4-10); if(x<20)return 4-(x/20)*4; return 0; }
+  function creditSell(x){ if(x<0)return 0; if(x>=30)return 7; return 2+x/30*5; }
+  function creditRatio(r,g){ if(g)return 8; if(r<=1.0)return 8; if(r<=2.0)return 6; if(r<=4.0)return 3; return 0; }
+  function volPrevScore(r){return r>=3?12:r>=2?9:r>=1.5?5:r>=1.2?2:0;}
+  function vol20Score(r){return r>=3?13:r>=2?9:r>=1.5?5:r>=1.2?2:0;}
+  function breakCloseScore(c,wh,wl){ if(c>wh)return 10; var mid=(wh+wl)/2; if(c>=mid&&c<=wh)return 5; return 0; }
   function classifyStage(r){
     var up=(r.close-r.wallHigh)/r.wallHigh*100;
     if(r.close>r.wallHigh){
@@ -403,22 +348,23 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
       if(r.vol20>=1.8)return (r.agedDays&&r.agedDays>30)?"above":"breakout";
       return "weak";
     }
-    if(r.close>=r.wallLow && r.close<=r.wallHigh)return "testing";
-    if(r.close>=r.wallLow*0.95 && r.close<r.wallLow)return "approach";
+    if(r.close>=r.wallLow&&r.close<=r.wallHigh)return "testing";
+    if(r.close>=r.wallLow*0.95&&r.close<r.wallLow)return "approach";
     return "out";
   }
-
   function analyze(r){
     var stage=classifyStage(r);
+    var buy=r.buy||0, sell=r.sell||0, ratio=r.ratio||0;
     var c1a=wallThickness(r.conc), c1b=boxStay(r.box), c1c=POS_SCORE[stage];
-    var c2a=creditBuy(r.buy), c2b=creditSell(r.sell), c2c=creditRatio(r.ratio,r.gyaku);
+    var c2a=creditBuy(buy), c2b=creditSell(sell), c2c=creditRatio(ratio,r.gyaku);
     var c3a=volPrevScore(r.volPrev), c3b=vol20Score(r.vol20), c3c=breakCloseScore(r.close,r.wallHigh,r.wallLow);
     var cond1=c1a+c1b+c1c, cond2=c2a+c2b+c2c, cond3=c3a+c3b+c3c;
     var total = r.noCredit ? (cond1+cond3)/75*100 : (cond1+cond2+cond3);
-    var stopPct=(r.wallLow-r.close)/r.close*100;
     return {
-      raw:r, stage:stage, cond1:cond1,cond2:cond2,cond3:cond3, total:total,
-      stop:r.wallLow, stopPct:stopPct, noCredit:!!r.noCredit,
+      raw:r, code:r.code, name:r.name, market:r.market||"", stage:stage,
+      cond1:cond1,cond2:cond2,cond3:cond3, total:total,
+      stop:r.wallLow, stopPct:(r.wallLow-r.close)/r.close*100, noCredit:!!r.noCredit,
+      passScreen:!!r.passScreen,
       items:[
         {g:1,label:"壁の厚さ",        v:c1a,max:15,c:"#22D3EE"},
         {g:1,label:"ボックス滞留",    v:c1b,max:10,c:"#22D3EE"},
@@ -433,7 +379,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     };
   }
 
-  /* ===== 出来高プロファイル生成（40帯・決定論的） ===== */
+  // デモ用：40帯プロファイルと時系列を決定論的に合成
   function genProfile(r){
     var n=40, arr=[], step=(r.yearHigh-r.yearLow)/n;
     var center=(r.wallLow+r.wallHigh)/2, width=Math.max(r.wallHigh-r.wallLow,1);
@@ -446,9 +392,19 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     }
     return arr;
   }
+  function synthSeries(r){
+    var N=120, arr=[], center=(r.wallLow+r.wallHigh)/2, W=Math.max(r.wallHigh-r.wallLow,1), end=r.close;
+    for(var i=0;i<N;i++){
+      var t=i/(N-1), base;
+      if(t<0.6){ base=center + Math.sin(i*0.5)*W*0.5 + Math.sin(i*0.16)*W*0.35; }
+      else { var u=(t-0.6)/0.4; base=center + (end-center)*Math.pow(u,1.25) + Math.sin(i*0.5)*W*0.22*(1-u); }
+      arr.push({d:i, c:base});
+    }
+    arr[N-1].c=end;
+    return arr;
+  }
 
-  /* ===== モックデータ ===== */
-  var RAW=[
+  var DEMO_RAW=[
     {code:"9999",name:"デモ銘柄A",       close:1073,wallLow:1010,wallHigh:1030,yearLow:790, yearHigh:1120,conc:44,box:52,buy:-28.9,sell:140,ratio:0.89,gyaku:false,volPrev:3.3,vol20:3.3,supportConfirmed:false,agedDays:0, noCredit:false},
     {code:"7013",name:"IHI型モデル",     close:1540,wallLow:1480,wallHigh:1510,yearLow:1180,yearHigh:1620,conc:25,box:60,buy:-20, sell:30, ratio:1.5, gyaku:false,volPrev:3.0,vol20:2.5,supportConfirmed:true, agedDays:12,noCredit:false},
     {code:"5803",name:"フジクラ型モデル",close:2680,wallLow:2200,wallHigh:2260,yearLow:1650,yearHigh:2760,conc:26,box:45,buy:-25, sell:35, ratio:0.9, gyaku:false,volPrev:3.1,vol20:3.2,supportConfirmed:false,agedDays:40,noCredit:false},
@@ -456,78 +412,95 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     {code:"9984",name:"ソフトバンクG型", close:8450,wallLow:8100,wallHigh:8300,yearLow:6800,yearHigh:8620,conc:25,box:30,buy:0,   sell:0,  ratio:3.5, gyaku:false,volPrev:1.4,vol20:1.4,supportConfirmed:false,agedDays:0, noCredit:false}
   ];
 
-  var DATA=RAW.map(function(r){var a=analyze(r);a.profile=genProfile(r);return a;})
-              .sort(function(x,y){return y.total-x.total;});
+  var DATA=[], SOURCE={mode:"demo"};
+  var state={filter:"all", selected:null, checks:{}};
 
-  /* ===== state ===== */
-  var state={filter:"all", selected:DATA[0].raw.code, checks:{}};
+  function buildItem(raw){
+    var a=analyze(raw);
+    a.profile = raw.profile && raw.profile.length ? raw.profile : genProfile(raw);
+    a.series  = raw.series && raw.series.length ? raw.series : synthSeries(raw);
+    return a;
+  }
+  function setDataset(rawList, source){
+    DATA = rawList.map(buildItem).sort(function(x,y){return y.total-x.total;});
+    SOURCE = source;
+    if(!state.selected || !DATA.some(function(d){return d.code===state.selected;})) state.selected = DATA.length?DATA[0].code:null;
+    renderAll();
+  }
 
-  /* ===== helpers ===== */
   function fmt(n){return Math.round(n).toLocaleString("ja-JP");}
   function yen(n){return fmt(n)+"円";}
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
   function scoreColor(t){return t>=80?"#2FD98A":t>=60?"#22D3EE":t>=40?"#F6B01E":"#F26D6D";}
   function $(id){return document.getElementById(id);}
 
-  /* ===== render: summary ===== */
+  function renderSrcbar(){
+    var el=$("srcbar");
+    if(SOURCE.mode==="live"){
+      var when = SOURCE.updatedAt ? new Date(SOURCE.updatedAt).toLocaleString("ja-JP",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}) : "";
+      var pass = DATA.filter(function(d){return d.passScreen;}).length;
+      el.innerHTML='<span class="dot live"></span><span class="lbl">実データ</span>'+
+        '<span class="sep">|</span><span class="meta">Yahoo Finance</span>'+
+        '<span class="sep">|</span><span class="meta">'+when+' 更新</span>'+
+        '<span class="sep">|</span><span class="meta">一次スクリーニング通過 '+pass+'/'+DATA.length+'</span>'+
+        (SOURCE.failed?'<span class="sep">|</span><span class="warn">取得失敗 '+SOURCE.failed+'</span>':'')+
+        '<span class="sep">|</span><span class="warn">需給なし換算</span>';
+    }else if(SOURCE.mode==="demo"){
+      el.innerHTML='<span class="dot demo"></span><span class="lbl">デモデータ</span>'+
+        '<span class="sep">|</span><span class="meta">検証用プリセット5銘柄</span>'+
+        '<span class="sep">|</span><span class="meta">'+(SOURCE.reason||"実データ未取得")+'</span>';
+    }else{
+      el.innerHTML='<span class="dot loading"></span><span class="lbl">データ読み込み中…</span>';
+    }
+  }
+
   function renderSummary(){
     var n=DATA.length;
     var brk=DATA.filter(function(d){return d.stage==="breakout";}).length;
     var high=DATA.filter(function(d){return d.total>=80;}).length;
-    var avg=DATA.reduce(function(s,d){return s+d.total;},0)/n;
+    var avg=n?DATA.reduce(function(s,d){return s+d.total;},0)/n:0;
     var cards=[
-      {cls:"c-scan", k:"スキャン対象銘柄数", v:fmt(n),     u:"銘柄"},
-      {cls:"c-break",k:"ブレイク確定",       v:fmt(brk),   u:"銘柄"},
-      {cls:"c-high", k:"高得点（80点以上）", v:fmt(high),  u:"銘柄"},
+      {cls:"c-scan", k:"スキャン対象銘柄数", v:fmt(n),        u:"銘柄"},
+      {cls:"c-break",k:"ブレイク確定",       v:fmt(brk),      u:"銘柄"},
+      {cls:"c-high", k:"高得点（80点以上）", v:fmt(high),     u:"銘柄"},
       {cls:"c-avg",  k:"平均スコア",         v:avg.toFixed(1),u:"点"}
     ];
     $("summary").innerHTML=cards.map(function(c){
-      return '<div class="stat '+c.cls+'"><div class="k">'+c.k+'</div>'+
-             '<div class="v">'+c.v+'<span class="u">'+c.u+'</span></div></div>';
+      return '<div class="stat '+c.cls+'"><div class="k">'+c.k+'</div><div class="v">'+c.v+'<span class="u">'+c.u+'</span></div></div>';
     }).join("");
-    $("updated").textContent="集計日 "+TODAY+" ・ 全信用銘柄スキャン";
     $("foot-r").textContent="対象 250営業日 / 40価格帯 ・ "+TODAY;
   }
 
-  /* ===== render: chips ===== */
   function renderChips(){
     var order=["all","breakout","support","testing","approach","weak","above","bluesky","out"];
-    var html=order.map(function(k){
+    $("chips").innerHTML=order.map(function(k){
       var cnt = k==="all"?DATA.length:DATA.filter(function(d){return d.stage===k;}).length;
       var label = k==="all"?"すべて":STAGES[k].label;
       var col = k==="all"?"#9DACC6":STAGES[k].color;
-      var pressed = state.filter===k;
-      return '<button class="chip" type="button" data-k="'+k+'" aria-pressed="'+pressed+'" style="--c:'+col+'">'+
-             '<span class="dot"></span>'+label+'<span class="cnt">'+cnt+'</span></button>';
+      return '<button class="chip" type="button" data-k="'+k+'" aria-pressed="'+(state.filter===k)+'" style="--c:'+col+'"><span class="dot"></span>'+label+'<span class="cnt">'+cnt+'</span></button>';
     }).join("");
-    $("chips").innerHTML=html;
     Array.prototype.forEach.call($("chips").querySelectorAll(".chip"),function(el){
       el.onclick=function(){state.filter=el.getAttribute("data-k");renderChips();renderTable();};
     });
   }
 
-  /* ===== render: table ===== */
-  function rows(){
-    return DATA.filter(function(d){return state.filter==="all"||d.stage===state.filter;});
-  }
+  function rows(){ return DATA.filter(function(d){return state.filter==="all"||d.stage===state.filter;}); }
   function renderTable(){
     var list=rows();
     $("table-meta").textContent=list.length+" 銘柄表示";
     var tb=$("tbody");
     if(!list.length){tb.innerHTML='<tr><td colspan="7" style="padding:28px;text-align:center;color:var(--ink-3)">該当ステージの銘柄はありません</td></tr>';return;}
-    tb.innerHTML=list.map(function(d,i){
-      var r=d.raw, st=STAGES[d.stage];
-      var rankOverall=DATA.indexOf(d)+1;
-      var gc=scoreColor(d.total);
+    tb.innerHTML=list.map(function(d){
+      var r=d.raw, st=STAGES[d.stage], rankOverall=DATA.indexOf(d)+1, gc=scoreColor(d.total);
       return '<tr data-code="'+r.code+'" aria-selected="'+(state.selected===r.code)+'">'+
         '<td class="r"><span class="rank'+(rankOverall<=3?" top":"")+'">'+rankOverall+'</span></td>'+
-        '<td><div class="code">'+r.code+'</div><div class="nm">'+esc(r.name)+'</div></td>'+
+        '<td><div class="code">'+esc(r.code)+'</div><div class="nm">'+esc(r.name)+'</div></td>'+
         '<td class="r num">'+yen(r.close)+'</td>'+
         '<td><span class="badge" style="--sc:'+st.color+'"><span class="bd"></span>'+st.label+'</span>'+
-            (d.noCredit?'<span class="badgeflag">需給なし換算</span>':'')+'</td>'+
+            (d.passScreen?'<span class="screenflag">一次通過</span>':'')+(d.noCredit?'<span class="badgeflag">需給なし換算</span>':'')+'</td>'+
         '<td class="r"><div class="gauge"><div class="track"><div class="fill" style="width:'+Math.min(d.total,100)+'%;--gc:'+gc+'"></div></div>'+
             '<span class="sc" style="color:'+gc+'">'+d.total.toFixed(1)+'</span></div></td>'+
-        '<td class="r num">'+fmt(r.wallLow)+'〜'+fmt(r.wallHigh)+'<div class="mini">出来高 '+r.vol20.toFixed(1)+'倍</div></td>'+
+        '<td class="r num">'+fmt(r.wallLow)+'〜'+fmt(r.wallHigh)+'<div class="mini">出来高 '+(r.vol20!=null?r.vol20.toFixed(1):"-")+'倍</div></td>'+
         '<td class="r stopcell">'+yen(d.stop)+'<div class="mini" style="color:var(--down)">'+d.stopPct.toFixed(1)+'%</div></td>'+
       '</tr>';
     }).join("");
@@ -536,91 +509,103 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     });
   }
 
-  /* ===== profile chart ===== */
-  function chartSVG(d){
-    var r=d.raw, W=300, H=340, padT=14, padB=14, padL=10, padR=64, cw=W-padL-padR, ch=H-padT-padB;
-    var maxV=0; d.profile.forEach(function(b){if(b.v>maxV)maxV=b.v;});
-    var span=r.yearHigh-r.yearLow;
-    function y(p){return padT+(1-(clamp(p,r.yearLow,r.yearHigh)-r.yearLow)/span)*ch;}
-    var bh=ch/d.profile.length-1.4;
-    var bars=d.profile.map(function(b){
-      var isWall=b.p>=r.wallLow && b.p<=r.wallHigh;
-      var len=b.v/maxV*cw;
-      var yy=y(b.hi);
-      return '<rect x="'+padL+'" y="'+yy.toFixed(1)+'" width="'+len.toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="1" '+
-             'fill="'+(isWall?"#F6B01E":"#2B3B58")+'" '+(isWall?'opacity="0.92"':'opacity="0.75"')+'/>';
+  // 時系列(左)＋価格帯別出来高プロファイル(右)を価格軸共有で描く
+  function chartCombined(d){
+    var r=d.raw, series=d.series||[], profile=d.profile||[];
+    var W=360, H=300, padT=14, padB=30;
+    var timeX=8, timeW=204, gap=8, profX=timeX+timeW+gap, profW=74, labelX=profX+profW+4;
+    var ch=H-padT-padB;
+    var lo=Math.min(r.wallLow, r.close), hi=Math.max(r.wallHigh, r.close);
+    series.forEach(function(p){ if(p.c<lo)lo=p.c; if(p.c>hi)hi=p.c; });
+    var pad=(hi-lo)*0.06||1; lo-=pad; hi+=pad;
+    function y(p){ return padT+(1-(clamp(p,lo,hi)-lo)/(hi-lo))*ch; }
+    var n=series.length;
+    function px(i){ return timeX + (n<=1?0:i/(n-1)*timeW); }
+    var wyH=y(r.wallHigh), wyL=y(r.wallLow);
+    // wall zone across both panels
+    var wall='<rect x="'+timeX+'" y="'+wyH.toFixed(1)+'" width="'+(profX+profW-timeX)+'" height="'+Math.max(wyL-wyH,0.6).toFixed(1)+'" fill="#F6B01E" opacity="0.09"/>'+
+      '<line x1="'+timeX+'" y1="'+wyH.toFixed(1)+'" x2="'+(profX+profW)+'" y2="'+wyH.toFixed(1)+'" stroke="#F6B01E" stroke-width="0.8" opacity="0.5"/>'+
+      '<line x1="'+timeX+'" y1="'+wyL.toFixed(1)+'" x2="'+(profX+profW)+'" y2="'+wyL.toFixed(1)+'" stroke="#F6B01E" stroke-width="0.8" opacity="0.5"/>';
+    // time area + line
+    var line="", area="";
+    if(n){
+      series.forEach(function(p,i){ line+=(i?"L":"M")+px(i).toFixed(1)+" "+y(p.c).toFixed(1)+" "; });
+      area="M"+px(0).toFixed(1)+" "+(padT+ch).toFixed(1)+" "+series.map(function(p,i){return "L"+px(i).toFixed(1)+" "+y(p.c).toFixed(1);}).join(" ")+" L"+px(n-1).toFixed(1)+" "+(padT+ch).toFixed(1)+" Z";
+    }
+    var timeChart='<path d="'+area+'" fill="url(#gline)" opacity="0.5"/><path d="'+line+'" fill="none" stroke="#22D3EE" stroke-width="1.6" stroke-linejoin="round"/>';
+    // profile bars (right)
+    var maxV=0; profile.forEach(function(b){if(b.v>maxV)maxV=b.v;}); maxV=maxV||1;
+    var bh=ch/profile.length-1.2;
+    var bars=profile.map(function(b){
+      var isWall=b.p>=r.wallLow&&b.p<=r.wallHigh, len=b.v/maxV*profW, yy=y(b.hi);
+      return '<rect x="'+profX+'" y="'+yy.toFixed(1)+'" width="'+len.toFixed(1)+'" height="'+Math.max(bh,0.6).toFixed(1)+'" rx="0.8" fill="'+(isWall?"#F6B01E":"#2B3B58")+'" opacity="'+(isWall?0.95:0.7)+'"/>';
     }).join("");
-    // wall band overlay label
-    var wallTopY=y(r.wallHigh), wallBotY=y(r.wallLow);
-    var wallBox='<rect x="'+padL+'" y="'+wallTopY.toFixed(1)+'" width="'+cw+'" height="'+(wallBotY-wallTopY).toFixed(1)+'" fill="#F6B01E" opacity="0.06"/>'+
-      '<text x="'+(W-padR+6)+'" y="'+(wallTopY+9).toFixed(1)+'" fill="#F6B01E" font-size="9" font-family="IBM Plex Mono,monospace">'+fmt(r.wallHigh)+'</text>'+
-      '<text x="'+(W-padR+6)+'" y="'+(wallBotY-2).toFixed(1)+'" fill="#F6B01E" font-size="9" font-family="IBM Plex Mono,monospace">'+fmt(r.wallLow)+'</text>';
-    // current price line
-    var cy=y(r.close);
-    var priceLine='<line x1="'+padL+'" y1="'+cy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+cy.toFixed(1)+'" stroke="#22D3EE" stroke-width="1.5" stroke-dasharray="4 3"/>'+
-      '<circle cx="'+(W-padR)+'" cy="'+cy.toFixed(1)+'" r="2.6" fill="#22D3EE"/>'+
-      '<text x="'+(W-padR+6)+'" y="'+(cy+3).toFixed(1)+'" fill="#22D3EE" font-size="9.5" font-weight="600" font-family="IBM Plex Mono,monospace">'+fmt(r.close)+'</text>';
-    // stop line (= wall low)
-    var sy=y(r.wallLow);
-    var stopLine='<line x1="'+padL+'" y1="'+sy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+sy.toFixed(1)+'" stroke="#F26D6D" stroke-width="1.3" stroke-dasharray="2 3"/>';
-    // axis ticks (top/bottom)
-    var axis='<text x="'+(W-padR+6)+'" y="'+(padT+8)+'" fill="#5E6E8A" font-size="8.5" font-family="IBM Plex Mono,monospace">'+fmt(r.yearHigh)+'</text>'+
-             '<text x="'+(W-padR+6)+'" y="'+(H-padB)+'" fill="#5E6E8A" font-size="8.5" font-family="IBM Plex Mono,monospace">'+fmt(r.yearLow)+'</text>';
-    return '<svg class="chartwrap" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="価格帯別出来高プロファイル">'+
-           wallBox+bars+stopLine+priceLine+axis+'</svg>';
+    // current price line + stop line across both panels
+    var cy=y(r.close), sy=y(r.wallLow);
+    var priceLine='<line x1="'+timeX+'" y1="'+cy.toFixed(1)+'" x2="'+(profX+profW)+'" y2="'+cy.toFixed(1)+'" stroke="#22D3EE" stroke-width="1.3" stroke-dasharray="4 3"/>'+
+      '<circle cx="'+px(n-1).toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="2.8" fill="#22D3EE"/>';
+    var stopLine='<line x1="'+timeX+'" y1="'+sy.toFixed(1)+'" x2="'+(profX+profW)+'" y2="'+sy.toFixed(1)+'" stroke="#F26D6D" stroke-width="1.2" stroke-dasharray="2 3"/>';
+    // right price labels (clamped to avoid overlap with edges)
+    function lab(yy,txt,col,weight){ var Y=clamp(yy,padT+7,padT+ch-1); return '<text x="'+labelX+'" y="'+(Y+3).toFixed(1)+'" fill="'+col+'" font-size="9" font-weight="'+(weight||400)+'" font-family="IBM Plex Mono,monospace">'+txt+'</text>'; }
+    var labels=lab(cy,fmt(r.close),"#22D3EE",600)+lab(wyH,fmt(r.wallHigh),"#F6B01E")+lab(wyL,fmt(r.wallLow),"#F6B01E");
+    // x-axis date labels
+    var fromLbl = (series[0]&&series[0].d!=null)? (typeof series[0].d==="string"?series[0].d.slice(5):"") : "";
+    var toLbl = (series[n-1]&&series[n-1].d!=null)? (typeof series[n-1].d==="string"?series[n-1].d.slice(5):"") : "";
+    var xaxis='<text x="'+timeX+'" y="'+(H-12)+'" fill="#5E6E8A" font-size="8.5" font-family="IBM Plex Mono,monospace">'+(fromLbl||"約120営業日前")+'</text>'+
+      '<text x="'+(timeX+timeW)+'" y="'+(H-12)+'" fill="#5E6E8A" font-size="8.5" text-anchor="end" font-family="IBM Plex Mono,monospace">'+(toLbl||"現在")+'</text>'+
+      '<text x="'+(profX+profW/2)+'" y="'+(H-12)+'" fill="#5E6E8A" font-size="8" text-anchor="middle" font-family="IBM Plex Sans JP,sans-serif">価格帯別出来高</text>';
+    return '<svg class="chartwrap" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="価格推移としこり壁・価格帯別出来高">'+
+      '<defs><linearGradient id="gline" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22D3EE" stop-opacity="0.30"/><stop offset="1" stop-color="#22D3EE" stop-opacity="0"/></linearGradient></defs>'+
+      wall+timeChart+bars+stopLine+priceLine+labels+xaxis+'</svg>';
   }
 
-  /* ===== inspector ===== */
   var CHECKITEMS=[
     {th:"① 材料（カタリスト）の確認",td:"AIデータセンター・防衛などテーマの実体があるか"},
     {th:"② 壁より上の別の壁",td:"過去2年以上の高値しこりが上に控えていないか"},
     {th:"③ 信用残のタイムラグ",td:"前週金曜公表のため最新動向のズレを考慮したか"}
   ];
-  function groupTotals(d){
-    return [
-      {n:"条件1：価格帯別出来高の壁",v:d.cond1,max:40},
-      {n:"条件2：信用需給の改善",     v:d.cond2,max:25},
-      {n:"条件3：トリガーの確認",     v:d.cond3,max:35}
-    ];
-  }
   function renderInspector(){
-    var d=DATA.filter(function(x){return x.raw.code===state.selected;})[0]||DATA[0];
+    var d=DATA.filter(function(x){return x.code===state.selected;})[0]||DATA[0];
+    if(!d){ $("insp").innerHTML='<div class="card"><div class="isec"><p style="color:var(--ink-3)">銘柄がありません</p></div></div>'; return; }
     var r=d.raw, st=STAGES[d.stage], gc=scoreColor(d.total);
     var chg=(r.close-r.wallHigh)/r.wallHigh*100;
-    var gt=groupTotals(d);
-    var barsHtml=gt.map(function(g){
-      var its=d.items.filter(function(it){return it.g===({ "条件1：価格帯別出来高の壁":1,"条件2：信用需給の改善":2,"条件3：トリガーの確認":3 })[g.n];});
-      return '<div class="grp"><div class="gh"><span class="gt">'+g.n+'</span>'+
-        '<span class="gv"><b>'+g.v.toFixed(1)+'</b> / '+g.max+'</span></div>'+
+    var dayChg = r.prev? ((r.close/r.prev-1)*100) : null;
+    var G1=[{n:"条件1：価格帯別出来高の壁",v:d.cond1,max:40,g:1},{n:"条件2：信用需給の改善",v:d.cond2,max:25,g:2},{n:"条件3：トリガーの確認",v:d.cond3,max:35,g:3}];
+    var barsHtml=G1.map(function(gr){
+      if(gr.g===2 && d.noCredit){
+        return '<div class="grp"><div class="gh"><span class="gt">'+gr.n+'</span><span class="gv">— / 25</span></div>'+
+          '<div class="note">信用残データ未接続のため<b>需給なし換算</b>。条件1（'+d.cond1.toFixed(1)+'/40）＋条件3（'+d.cond3.toFixed(1)+'/35）＝75点を100点に換算して総合スコアを算出。</div></div>';
+      }
+      var its=d.items.filter(function(it){return it.g===gr.g;});
+      return '<div class="grp"><div class="gh"><span class="gt">'+gr.n+'</span><span class="gv"><b>'+gr.v.toFixed(1)+'</b> / '+gr.max+'</span></div>'+
         its.map(function(it){
-          return '<div class="item"><span class="il">'+it.label+'</span>'+
-            '<span class="iv"><b>'+it.v.toFixed(1)+'</b>/'+it.max+'</span>'+
+          return '<div class="item"><span class="il">'+it.label+'</span><span class="iv"><b>'+it.v.toFixed(1)+'</b>/'+it.max+'</span>'+
             '<span class="bar"><i style="width:'+(it.v/it.max*100)+'%;--bc:'+it.c+'"></i></span></div>';
         }).join("")+'</div>';
     }).join("");
-
     var checks=CHECKITEMS.map(function(c,i){
       var key=r.code+":"+i, on=!!state.checks[key];
       return '<li data-key="'+key+'" role="checkbox" aria-checked="'+on+'" tabindex="0">'+
         '<span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="#08110c" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span>'+
         '<span class="ct"><span class="th">'+c.th+'</span><span class="td">'+c.td+'</span></span></li>';
     }).join("");
-
+    var dchgHtml = dayChg!=null ? '<div class="t-chg '+(dayChg>=0?"up":"down")+'">前日比 '+(dayChg>=0?"+":"")+dayChg.toFixed(2)+'%</div>' : '';
     $("insp").innerHTML=
       '<div class="card">'+
-        '<div class="ihead">'+
-          '<div class="row1"><div><div class="t-code">'+r.code+'</div><div class="t-name">'+esc(r.name)+'</div></div>'+
-            '<div><div class="t-price num">'+yen(r.close)+'</div><div class="t-chg">壁上限比 '+(chg>=0?"+":"")+chg.toFixed(1)+'%</div></div></div>'+
+        '<div class="ihead"><div class="row1">'+
+            '<div><div class="t-code">'+esc(r.code)+'</div><div class="t-name">'+esc(r.name)+(r.market?' ・ '+esc(r.market):'')+'</div></div>'+
+            '<div><div class="t-price num">'+yen(r.close)+'</div>'+dchgHtml+'<div class="t-chg" style="color:var(--ink-3)">壁上限比 '+(chg>=0?"+":"")+chg.toFixed(1)+'%</div></div>'+
+          '</div>'+
           '<div class="r2"><span class="badge" style="--sc:'+st.color+'"><span class="bd"></span>'+st.label+'</span>'+
-            '<span class="bigscore" style="color:'+gc+';border-color:'+gc+'55;background:'+gc+'12">'+d.total.toFixed(1)+' 点</span>'+
-            (d.noCredit?'<span class="badgeflag">需給なし換算</span>':'')+'</div>'+
+            '<span class="bigscore" style="color:'+gc+';border:1px solid '+gc+'55;background:'+gc+'12">'+d.total.toFixed(1)+' 点</span>'+
+            (d.passScreen?'<span class="screenflag">一次スクリーニング通過</span>':'')+(d.noCredit?'<span class="badgeflag">需給なし換算</span>':'')+'</div>'+
         '</div>'+
-        '<div class="isec"><h3>水平出来高プロファイル（40価格帯）</h3>'+chartSVG(d)+
+        '<div class="isec"><h3>価格推移としこり壁（直近'+(d.series.length)+'営業日）</h3>'+chartCombined(d)+
           '<div class="chart-legend">'+
-            '<span><i style="background:#F6B01E"></i>しこり壁</span>'+
-            '<span><i style="background:#22D3EE"></i>現在値</span>'+
-            '<span><i style="background:#F26D6D"></i>損切り（壁下限）</span>'+
-            '<span><i style="background:#2B3B58"></i>価格帯出来高</span>'+
+            '<span style="color:#22D3EE"><i style="background:#22D3EE"></i>株価</span>'+
+            '<span style="color:#F6B01E"><i style="background:#F6B01E"></i>しこり壁</span>'+
+            '<span style="color:#22D3EE"><i class="dash"></i>現在値</span>'+
+            '<span style="color:#F26D6D"><i class="dash"></i>損切り（壁下限）</span>'+
           '</div>'+
           '<div class="stopbox"><div class="b"><div class="l">しこり壁 価格帯</div><div class="n">'+fmt(r.wallLow)+'〜'+fmt(r.wallHigh)+'</div></div>'+
             '<div class="b stop"><div class="l">損切りライン（幅）</div><div class="n">'+yen(d.stop)+' <span style="font-size:12px">('+d.stopPct.toFixed(1)+'%)</span></div></div></div>'+
@@ -628,7 +613,6 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
         '<div class="isec"><h3>12項目 採点内訳（100点満点）</h3>'+barsHtml+'</div>'+
         '<div class="isec"><h3>人間が確認する3大ポイント</h3><ul class="check">'+checks+'</ul></div>'+
       '</div>';
-
     Array.prototype.forEach.call($("insp").querySelectorAll(".check li"),function(li){
       function toggle(){var k=li.getAttribute("data-key");state.checks[k]=!state.checks[k];renderInspector();}
       li.onclick=toggle;
@@ -636,28 +620,28 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     });
   }
 
-  /* ===== simulator ===== */
+  function renderAll(){ renderSrcbar(); renderSummary(); renderChips(); renderTable(); renderInspector(); }
+
+  /* simulator */
   function simInputs(){
-    return {
+    return { code:"SIM", name:"シミュレーション",
       close:+$("s_close").value, wallLow:+$("s_wl").value, wallHigh:+$("s_wh").value,
       conc:+$("s_conc").value, box:+$("s_box").value, volPrev:+$("s_vp").value, vol20:+$("s_v20").value,
       buy:+$("s_buy").value, sell:+$("s_sell").value, ratio:+$("s_ratio").value,
-      gyaku:$("s_gyaku").checked, supportConfirmed:$("s_support").checked, noCredit:$("s_nocredit").checked,
-      agedDays:0
-    };
+      gyaku:$("s_gyaku").checked, supportConfirmed:$("s_support").checked, noCredit:$("s_nocredit").checked, agedDays:0 };
   }
   function renderSim(){
     var r=simInputs(), d=analyze(r), st=STAGES[d.stage], gc=scoreColor(d.total);
-    var gt=groupTotals(d);
-    var simbars=gt.map(function(g){
-      var col=g.max===40?"#22D3EE":g.max===25?"#2FD98A":"#F6B01E";
-      return '<div class="sb"><span class="t">'+(g.max===40?"条件1":g.max===25?"条件2":"条件3")+'</span>'+
-        '<span class="bar"><i style="width:'+(g.v/g.max*100)+'%;background:'+col+'"></i></span>'+
-        '<span class="n">'+g.v.toFixed(1)+'/'+g.max+'</span></div>';
+    var gt=[{v:d.cond1,max:40},{v:d.cond2,max:25},{v:d.cond3,max:35}];
+    var simbars=gt.map(function(g,i){
+      var col=i===0?"#22D3EE":i===1?"#2FD98A":"#F6B01E", muted=(i===1&&r.noCredit);
+      return '<div class="sb"><span class="t">'+(i===0?"条件1":i===1?"条件2":"条件3")+'</span>'+
+        '<span class="bar"><i style="width:'+(muted?0:g.v/g.max*100)+'%;background:'+col+'"></i></span>'+
+        '<span class="n">'+(muted?"換算":g.v.toFixed(1)+"/"+g.max)+'</span></div>';
     }).join("");
     $("sim-out").innerHTML=
       '<div class="bignum" style="color:'+gc+'">'+d.total.toFixed(1)+'</div>'+
-      '<div class="biglbl">総合スコア（100点満点）'+(d.noCredit?' ・需給なし換算':'')+'</div>'+
+      '<div class="biglbl">総合スコア（100点満点）'+(r.noCredit?' ・需給なし換算':'')+'</div>'+
       '<div class="simbadge"><span class="badge" style="--sc:'+st.color+'"><span class="bd"></span>'+st.label+'</span></div>'+
       '<div class="simbars">'+simbars+'</div>'+
       '<div><div class="simrow"><span class="l">損切りライン（壁下限）</span><span class="v stop">'+yen(d.stop)+'</span></div>'+
@@ -665,34 +649,33 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
         '<div class="simrow"><span class="l">壁上限比</span><span class="v">'+(((r.close-r.wallHigh)/r.wallHigh*100)>=0?"+":"")+((r.close-r.wallHigh)/r.wallHigh*100).toFixed(1)+'%</span></div></div>';
   }
   function openSim(){
-    var d=DATA.filter(function(x){return x.raw.code===state.selected;})[0]||DATA[0], r=d.raw;
+    var d=DATA.filter(function(x){return x.code===state.selected;})[0]||DATA[0], r=d?d.raw:DEMO_RAW[0];
     $("s_close").value=r.close; $("s_wl").value=r.wallLow; $("s_wh").value=r.wallHigh;
-    $("s_conc").value=r.conc; $("s_box").value=r.box; $("s_vp").value=r.volPrev; $("s_v20").value=r.vol20;
-    $("s_buy").value=r.buy; $("s_sell").value=r.sell; $("s_ratio").value=r.ratio;
+    $("s_conc").value=r.conc; $("s_box").value=Math.round(r.box); $("s_vp").value=r.volPrev; $("s_v20").value=r.vol20;
+    $("s_buy").value=r.buy||0; $("s_sell").value=r.sell||0; $("s_ratio").value=r.ratio||1.0;
     $("s_gyaku").checked=!!r.gyaku; $("s_support").checked=!!r.supportConfirmed; $("s_nocredit").checked=!!r.noCredit;
     $("sim-overlay").hidden=false; renderSim();
   }
   function closeSim(){$("sim-overlay").hidden=true;}
 
-  /* ===== Slack text ===== */
   function slackText(){
     var lines=[];
     lines.push("📊 青天井スキャナー 定時配信（平日17:40）");
-    lines.push("集計日 "+TODAY+" ／ 全信用銘柄スキャン");
+    lines.push("集計 "+TODAY+" ／ "+(SOURCE.mode==="live"?"実データ Yahoo Finance":"デモデータ")+(SOURCE.mode==="live"?"（需給なし換算）":""));
     lines.push("");
-    var brk=DATA.filter(function(d){return d.total>=80;});
-    var avg=DATA.reduce(function(s,d){return s+d.total;},0)/DATA.length;
-    lines.push("🎯 ブレイク確定 / 高得点（80点以上）: "+brk.length+"銘柄 ・ 平均"+avg.toFixed(1)+"点");
+    var high=DATA.filter(function(d){return d.total>=80;});
+    var avg=DATA.length?DATA.reduce(function(s,d){return s+d.total;},0)/DATA.length:0;
+    lines.push("🎯 高得点（80点以上）: "+high.length+"銘柄 ・ 平均"+avg.toFixed(1)+"点");
     lines.push("─────────────");
-    DATA.forEach(function(d,i){
+    DATA.slice(0,10).forEach(function(d,i){
       var r=d.raw, st=STAGES[d.stage];
       var icon=d.total>=80?"🟢":d.total>=60?"🔵":d.total>=40?"🟡":"⚪";
-      lines.push((i+1)+". ["+r.code+"] "+r.name+"  "+d.total.toFixed(1)+"点 "+icon+st.label);
-      lines.push("   現在値 "+yen(r.close)+" / 壁 "+fmt(r.wallLow)+"〜"+fmt(r.wallHigh)+" / 出来高 "+r.vol20.toFixed(1)+"倍");
+      lines.push((i+1)+". ["+r.code+"] "+r.name+"  "+d.total.toFixed(1)+"点 "+icon+st.label+(d.passScreen?" ✅一次通過":""));
+      lines.push("   現在値 "+yen(r.close)+" / 壁 "+fmt(r.wallLow)+"〜"+fmt(r.wallHigh)+" / 出来高 "+(r.vol20!=null?r.vol20.toFixed(1):"-")+"倍");
       lines.push("   損切り "+yen(d.stop)+"（"+d.stopPct.toFixed(1)+"%）");
     });
     lines.push("─────────────");
-    lines.push("※直近10営業日は壁計算から除外 / 信用残は前週金曜公表。投資は自己責任で。");
+    lines.push("※直近10営業日は壁計算から除外 / 信用残は需給なし換算。投資は自己責任で。");
     return lines.join("\n");
   }
   function showToast(msg){
@@ -701,27 +684,38 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
   }
   function copySlack(){
     var txt=slackText();
-    function fallback(){
-      try{var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";
-        document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);
-        showToast("Slack配信テキストをコピーしました");}catch(e){showToast("コピーに失敗しました");}
-    }
-    if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(txt).then(function(){showToast("Slack配信テキストをコピーしました");},fallback);
-    }else fallback();
+    function fallback(){ try{var ta=document.createElement("textarea");ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);showToast("Slack配信テキストをコピーしました");}catch(e){showToast("コピーに失敗しました");} }
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(function(){showToast("Slack配信テキストをコピーしました");},fallback); } else fallback();
   }
 
-  /* ===== wire up ===== */
+  /* wire up */
   $("btn-sim").onclick=openSim;
   $("btn-slack").onclick=copySlack;
   $("sim-close").onclick=closeSim;
   $("sim-overlay").onclick=function(e){if(e.target===$("sim-overlay"))closeSim();};
   document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("sim-overlay").hidden)closeSim();});
-  Array.prototype.forEach.call(document.querySelectorAll("#sim-form input"),function(inp){
-    inp.addEventListener("input",renderSim);
-  });
+  Array.prototype.forEach.call(document.querySelectorAll("#sim-form input"),function(inp){ inp.addEventListener("input",renderSim); });
 
-  renderSummary(); renderChips(); renderTable(); renderInspector();
+  /* boot: demo first, then try live data.json (same-origin, GitHub Pages) */
+  setDataset(DEMO_RAW, {mode:"demo", reason:"実データ取得中…"});
+  (function loadReal(){
+    if(typeof fetch!=="function")return;
+    fetch("data.json",{cache:"no-store"}).then(function(res){
+      if(!res.ok)throw new Error("no data");
+      return res.json();
+    }).then(function(j){
+      if(!j||!j.stocks||!j.stocks.length)throw new Error("empty");
+      var raws=j.stocks.map(function(s){
+        return {code:s.code,name:s.name,market:s.market,close:s.close,prev:s.prev,
+          wallLow:s.wallLow,wallHigh:s.wallHigh,conc:s.conc,box:s.box,volPrev:s.volPrev,vol20:s.vol20,
+          supportConfirmed:s.supportConfirmed,agedDays:s.agedDays,yearLow:s.yearLow,yearHigh:s.yearHigh,
+          passScreen:s.passScreen,noCredit:true,profile:s.profile,series:s.series};
+      });
+      setDataset(raws,{mode:"live",updatedAt:j.updatedAt,failed:(j.failed&&j.failed.length)||0});
+    }).catch(function(){
+      SOURCE={mode:"demo",reason:"実データ未取得（デモ表示）"}; renderSrcbar();
+    });
+  })();
 })();
 </script>
 </body>

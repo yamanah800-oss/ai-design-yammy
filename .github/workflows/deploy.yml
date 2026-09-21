@@ -38,6 +38,10 @@ jobs:
         continue-on-error: true
         run: node swing/fetch-prices.mjs
 
+      - name: Fetch breakout scanner data (server-side, no CORS)
+        continue-on-error: true
+        run: node scanner/fetch-scan.mjs
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
