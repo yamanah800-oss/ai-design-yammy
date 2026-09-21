@@ -505,58 +505,65 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
       '</tr>';
     }).join("");
     Array.prototype.forEach.call(tb.querySelectorAll("tr[data-code]"),function(tr){
-      tr.onclick=function(){state.selected=tr.getAttribute("data-code");renderTable();renderInspector();};
+      tr.onclick=function(){
+        state.selected=tr.getAttribute("data-code");renderTable();renderInspector();
+        // 狭い画面では詳細パネルが表の下にくるため、クリックでチャートまで自動スクロール
+        if(window.innerWidth<=1024){ var el=$("insp"); if(el&&el.scrollIntoView){ try{el.scrollIntoView({behavior:"smooth",block:"start"});}catch(e){el.scrollIntoView();} } }
+      };
     });
   }
 
-  // 時系列(左)＋価格帯別出来高プロファイル(右)を価格軸共有で描く
+  // 時系列(左)＋価格帯別出来高(右)を価格軸共有で描き、天井（しこり壁上限）と青天井ゾーンを明示
   function chartCombined(d){
     var r=d.raw, series=d.series||[], profile=d.profile||[];
-    var W=360, H=300, padT=14, padB=30;
-    var timeX=8, timeW=204, gap=8, profX=timeX+timeW+gap, profW=74, labelX=profX+profW+4;
+    var W=360, H=326, padT=16, padB=34;
+    var timeX=8, timeW=206, gap=8, profX=timeX+timeW+gap, profW=70, labelX=profX+profW+4, chartRight=profX+profW;
     var ch=H-padT-padB;
     var lo=Math.min(r.wallLow, r.close), hi=Math.max(r.wallHigh, r.close);
     series.forEach(function(p){ if(p.c<lo)lo=p.c; if(p.c>hi)hi=p.c; });
-    var pad=(hi-lo)*0.06||1; lo-=pad; hi+=pad;
+    var pad=(hi-lo)*0.08||1; lo-=pad; hi+=pad;
     function y(p){ return padT+(1-(clamp(p,lo,hi)-lo)/(hi-lo))*ch; }
     var n=series.length;
     function px(i){ return timeX + (n<=1?0:i/(n-1)*timeW); }
-    var wyH=y(r.wallHigh), wyL=y(r.wallLow);
-    // wall zone across both panels
-    var wall='<rect x="'+timeX+'" y="'+wyH.toFixed(1)+'" width="'+(profX+profW-timeX)+'" height="'+Math.max(wyL-wyH,0.6).toFixed(1)+'" fill="#F6B01E" opacity="0.09"/>'+
-      '<line x1="'+timeX+'" y1="'+wyH.toFixed(1)+'" x2="'+(profX+profW)+'" y2="'+wyH.toFixed(1)+'" stroke="#F6B01E" stroke-width="0.8" opacity="0.5"/>'+
-      '<line x1="'+timeX+'" y1="'+wyL.toFixed(1)+'" x2="'+(profX+profW)+'" y2="'+wyL.toFixed(1)+'" stroke="#F6B01E" stroke-width="0.8" opacity="0.5"/>';
-    // time area + line
+    var wyH=y(r.wallHigh), wyL=y(r.wallLow), broke=r.close>r.wallHigh;
+    // 青天井ゾーン（天井より上：上値に売り圧力なし）
+    var sky='<rect x="'+timeX+'" y="'+padT+'" width="'+(chartRight-timeX)+'" height="'+Math.max(wyH-padT,0).toFixed(1)+'" fill="url(#sky)"/>'+
+      '<text x="'+(timeX+5)+'" y="'+(padT+12)+'" fill="#F472B6" font-size="9" font-weight="600" font-family="IBM Plex Sans JP,sans-serif">青天井ゾーン</text>';
+    // しこり壁ゾーン＋下限
+    var wall='<rect x="'+timeX+'" y="'+wyH.toFixed(1)+'" width="'+(chartRight-timeX)+'" height="'+Math.max(wyL-wyH,0.6).toFixed(1)+'" fill="#F6B01E" opacity="0.10"/>'+
+      '<line x1="'+timeX+'" y1="'+wyL.toFixed(1)+'" x2="'+chartRight+'" y2="'+wyL.toFixed(1)+'" stroke="#F6B01E" stroke-width="0.8" opacity="0.45"/>';
+    // 天井ライン（しこり壁上限＝抵抗）を強調
+    var ceil='<line x1="'+timeX+'" y1="'+wyH.toFixed(1)+'" x2="'+chartRight+'" y2="'+wyH.toFixed(1)+'" stroke="#F6B01E" stroke-width="1.8"/>';
+    // 時系列 area + line
     var line="", area="";
     if(n){
       series.forEach(function(p,i){ line+=(i?"L":"M")+px(i).toFixed(1)+" "+y(p.c).toFixed(1)+" "; });
       area="M"+px(0).toFixed(1)+" "+(padT+ch).toFixed(1)+" "+series.map(function(p,i){return "L"+px(i).toFixed(1)+" "+y(p.c).toFixed(1);}).join(" ")+" L"+px(n-1).toFixed(1)+" "+(padT+ch).toFixed(1)+" Z";
     }
-    var timeChart='<path d="'+area+'" fill="url(#gline)" opacity="0.5"/><path d="'+line+'" fill="none" stroke="#22D3EE" stroke-width="1.6" stroke-linejoin="round"/>';
-    // profile bars (right)
+    var timeChart='<path d="'+area+'" fill="url(#gline)" opacity="0.55"/><path d="'+line+'" fill="none" stroke="#22D3EE" stroke-width="1.7" stroke-linejoin="round"/>';
+    // 価格帯別出来高（右）
     var maxV=0; profile.forEach(function(b){if(b.v>maxV)maxV=b.v;}); maxV=maxV||1;
     var bh=ch/profile.length-1.2;
     var bars=profile.map(function(b){
       var isWall=b.p>=r.wallLow&&b.p<=r.wallHigh, len=b.v/maxV*profW, yy=y(b.hi);
       return '<rect x="'+profX+'" y="'+yy.toFixed(1)+'" width="'+len.toFixed(1)+'" height="'+Math.max(bh,0.6).toFixed(1)+'" rx="0.8" fill="'+(isWall?"#F6B01E":"#2B3B58")+'" opacity="'+(isWall?0.95:0.7)+'"/>';
     }).join("");
-    // current price line + stop line across both panels
     var cy=y(r.close), sy=y(r.wallLow);
-    var priceLine='<line x1="'+timeX+'" y1="'+cy.toFixed(1)+'" x2="'+(profX+profW)+'" y2="'+cy.toFixed(1)+'" stroke="#22D3EE" stroke-width="1.3" stroke-dasharray="4 3"/>'+
-      '<circle cx="'+px(n-1).toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="2.8" fill="#22D3EE"/>';
-    var stopLine='<line x1="'+timeX+'" y1="'+sy.toFixed(1)+'" x2="'+(profX+profW)+'" y2="'+sy.toFixed(1)+'" stroke="#F26D6D" stroke-width="1.2" stroke-dasharray="2 3"/>';
-    // right price labels (clamped to avoid overlap with edges)
+    var priceLine='<line x1="'+timeX+'" y1="'+cy.toFixed(1)+'" x2="'+chartRight+'" y2="'+cy.toFixed(1)+'" stroke="#22D3EE" stroke-width="1.3" stroke-dasharray="4 3"/>'+
+      '<circle cx="'+px(n-1).toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="3" fill="#22D3EE"/>';
+    var stopLine='<line x1="'+timeX+'" y1="'+sy.toFixed(1)+'" x2="'+chartRight+'" y2="'+sy.toFixed(1)+'" stroke="#F26D6D" stroke-width="1.2" stroke-dasharray="2 3"/>';
+    var breakBadge = broke ? '<text x="'+(px(n-1)-4).toFixed(1)+'" y="'+(clamp(cy,padT+16,padT+ch)-9).toFixed(1)+'" fill="#2FD98A" font-size="9" font-weight="700" text-anchor="end" font-family="IBM Plex Sans JP,sans-serif">▲ 天井突破</text>' : '';
     function lab(yy,txt,col,weight){ var Y=clamp(yy,padT+7,padT+ch-1); return '<text x="'+labelX+'" y="'+(Y+3).toFixed(1)+'" fill="'+col+'" font-size="9" font-weight="'+(weight||400)+'" font-family="IBM Plex Mono,monospace">'+txt+'</text>'; }
-    var labels=lab(cy,fmt(r.close),"#22D3EE",600)+lab(wyH,fmt(r.wallHigh),"#F6B01E")+lab(wyL,fmt(r.wallLow),"#F6B01E");
-    // x-axis date labels
-    var fromLbl = (series[0]&&series[0].d!=null)? (typeof series[0].d==="string"?series[0].d.slice(5):"") : "";
-    var toLbl = (series[n-1]&&series[n-1].d!=null)? (typeof series[n-1].d==="string"?series[n-1].d.slice(5):"") : "";
+    var labels=lab(wyH,"天井 "+fmt(r.wallHigh),"#F6B01E",700)+lab(cy,"現在 "+fmt(r.close),"#22D3EE",600)+lab(sy,"損切 "+fmt(r.wallLow),"#F26D6D");
+    var fromLbl=(series[0]&&typeof series[0].d==="string")?series[0].d.slice(5):"";
+    var toLbl=(series[n-1]&&typeof series[n-1].d==="string")?series[n-1].d.slice(5):"";
     var xaxis='<text x="'+timeX+'" y="'+(H-12)+'" fill="#5E6E8A" font-size="8.5" font-family="IBM Plex Mono,monospace">'+(fromLbl||"約120営業日前")+'</text>'+
       '<text x="'+(timeX+timeW)+'" y="'+(H-12)+'" fill="#5E6E8A" font-size="8.5" text-anchor="end" font-family="IBM Plex Mono,monospace">'+(toLbl||"現在")+'</text>'+
-      '<text x="'+(profX+profW/2)+'" y="'+(H-12)+'" fill="#5E6E8A" font-size="8" text-anchor="middle" font-family="IBM Plex Sans JP,sans-serif">価格帯別出来高</text>';
-    return '<svg class="chartwrap" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="価格推移としこり壁・価格帯別出来高">'+
-      '<defs><linearGradient id="gline" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22D3EE" stop-opacity="0.30"/><stop offset="1" stop-color="#22D3EE" stop-opacity="0"/></linearGradient></defs>'+
-      wall+timeChart+bars+stopLine+priceLine+labels+xaxis+'</svg>';
+      '<text x="'+(profX+profW/2)+'" y="'+(H-12)+'" fill="#5E6E8A" font-size="8" text-anchor="middle" font-family="IBM Plex Sans JP,sans-serif">出来高</text>';
+    return '<svg class="chartwrap" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="価格推移と天井（しこり壁上限）・青天井ゾーン">'+
+      '<defs><linearGradient id="gline" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22D3EE" stop-opacity="0.30"/><stop offset="1" stop-color="#22D3EE" stop-opacity="0"/></linearGradient>'+
+      '<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F472B6" stop-opacity="0.16"/><stop offset="1" stop-color="#F472B6" stop-opacity="0"/></linearGradient></defs>'+
+      sky+wall+ceil+timeChart+bars+stopLine+priceLine+breakBadge+labels+xaxis+'</svg>';
   }
 
   var CHECKITEMS=[
@@ -600,10 +607,11 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
             '<span class="bigscore" style="color:'+gc+';border:1px solid '+gc+'55;background:'+gc+'12">'+d.total.toFixed(1)+' 点</span>'+
             (d.passScreen?'<span class="screenflag">一次スクリーニング通過</span>':'')+(d.noCredit?'<span class="badgeflag">需給なし換算</span>':'')+'</div>'+
         '</div>'+
-        '<div class="isec"><h3>価格推移としこり壁（直近'+(d.series.length)+'営業日）</h3>'+chartCombined(d)+
+        '<div class="isec"><h3>価格推移と天井（直近'+(d.series.length)+'営業日）</h3>'+chartCombined(d)+
           '<div class="chart-legend">'+
             '<span style="color:#22D3EE"><i style="background:#22D3EE"></i>株価</span>'+
-            '<span style="color:#F6B01E"><i style="background:#F6B01E"></i>しこり壁</span>'+
+            '<span style="color:#F6B01E"><i style="background:#F6B01E"></i>天井（しこり壁上限）</span>'+
+            '<span style="color:#F472B6"><i style="background:#F472B6"></i>青天井ゾーン</span>'+
             '<span style="color:#22D3EE"><i class="dash"></i>現在値</span>'+
             '<span style="color:#F26D6D"><i class="dash"></i>損切り（壁下限）</span>'+
           '</div>'+
