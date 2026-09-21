@@ -144,6 +144,12 @@ footer a{color:var(--ink-2)}
 #removedbar:empty{display:none}
 #removedbar{padding:10px 16px;border-top:1px dashed var(--rule);display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;color:var(--ink-3)}
 #removedbar .rlab{font-weight:600}
+#pendreg:empty{display:none}
+#pendreg{padding:10px 16px;border-top:1px solid var(--warn);background:var(--warn-soft);display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;color:var(--ink)}
+#pendreg .rlab{font-weight:700;color:var(--warn)}
+.reglink{display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:12px;padding:4px 10px;border-radius:6px;background:var(--accent);color:var(--on-accent);text-decoration:none}
+.reglink:hover{filter:brightness(1.08)}
+.reghint{font-size:11px;color:var(--ink-2);flex-basis:100%}
 .restore{border:1px solid var(--rule);background:var(--surface-2);border-radius:999px;padding:2px 10px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:var(--mono)}
 .restore:hover{border-color:var(--accent);color:var(--accent)}
 /* 銘柄追加フォーム */
@@ -252,6 +258,7 @@ footer a{color:var(--ink-2)}
     <div class="alerts" id="alerts"><div class="alert"><span class="sev none">…</span><span>データを取得中です。</span></div></div>
     <div class="rows" id="rows"></div>
     <div class="rowhint">▸ 銘柄をクリックすると詳細分析を表示します</div>
+    <div id="pendreg"></div>
     <div id="removedbar"></div>
   </section>
 
@@ -690,6 +697,7 @@ function render(){
       <div class="ratio" title="上値余地(TP1−現在) ÷ 下値リスク(現在−SL)"><span class="num" style="color:${rt?(rt.r1<1?'var(--warn)':'var(--ink)'):'var(--ink-3)'}">${rt?r2(rt.r1):'—'}</span><small>${rt?`上値<b class="up">+${esc(fmt(h,rt.up))}</b> / 下値<b class="down">−${esc(fmt(h,rt.down))}</b>`:'上値÷下値'}</small></div>
     </div>`;
   }).join('') : `<div class="empty" style="padding:20px;color:var(--ink-3)">表示できる銘柄がありません。下の「戻す」で復元できます。</div>`;
+  renderPendReg();
   renderRemovedBar();
   renderIdx();
   renderDetail();
@@ -713,6 +721,24 @@ function renderIdx(){
     const ix = indices[k]; const ch = (ix.value != null && ix.prev) ? (ix.value/ix.prev-1)*100 : null;
     return `<div class="ix"><span class="ix-l">${esc(ix.label||k)}</span><span class="ix-v num">${fmtV(k,ix.value)}</span><span class="ix-c num ${ch==null?'flat':ch>=0?'up':'down'}">${ch==null?'':(ch>=0?'+':'')+ch.toFixed(2)+'%'}</span></div>`;
   }).join('');
+}
+
+/* ---------- 追加銘柄のサーバー登録（GitHub承認方式） ---------- */
+const REPO_ISSUE_URL = 'https://github.com/yamanah800-oss/ai-design-yammy/issues/new';
+function regUrl(h){
+  const payload = JSON.stringify({code:h.code, yahoo:h.yahoo, name:h.name, market:h.market, cur:h.cur});
+  const title = `[register] ${h.code}`;
+  const body = `この銘柄をサーバーの株価取得リストに登録します（アプリが自動生成）。\nこのまま画面下の「Submit new issue」を押すだけでOKです。約5分後に株価が入り、Issueは自動で閉じます。\n\n\`\`\`stock\n${payload}\n\`\`\`\n`;
+  return `${REPO_ISSUE_URL}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+}
+// 追加したがサーバーにまだ株価が無い銘柄を「登録待ち」として表示
+function renderPendReg(){
+  const el = $('#pendreg'); if (!el) return;
+  const pend = customH().filter(h => { const s = state.get(h.code); return !removed.has(h.code) && (!s || s.price == null); });
+  if (!pend.length){ el.innerHTML = ''; return; }
+  el.innerHTML = `<span class="rlab">株価待ちの追加銘柄</span>`
+    + pend.map(h => `<a class="reglink" href="${regUrl(h)}" target="_blank" rel="noopener">▶ ${esc(h.code)} をサーバー登録</a>`).join('')
+    + `<span class="reghint">リンクを開き GitHub で1回「Submit new issue」を押すと、約5分後に株価が自動で入ります。</span>`;
 }
 
 /* ---------- 削除した銘柄の復元バー ---------- */
@@ -910,7 +936,7 @@ if (removedbarEl) removedbarEl.addEventListener('click', e => {
   render();
 });
 
-try { $('#ver').textContent = 'build v27 (追加/編集ボタン強調)'; } catch(_){}
+try { $('#ver').textContent = 'build v28 (追加銘柄のサーバー登録)'; } catch(_){}
 setInterval(renderMkt, 30000);
 render();
 refresh().then(startTimer);
