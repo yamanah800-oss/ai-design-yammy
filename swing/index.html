@@ -221,7 +221,7 @@ footer a{color:var(--ink-2)}
       <span class="ver" id="ver" title="ビルド版数"></span>
       <span><span class="dot" id="livedot"></span> <span id="status">読み込み中…</span></span>
       <label><input type="checkbox" id="auto" checked> 自動更新（60秒）</label>
-      <button class="btn primary" id="refresh">↻ 今すぐ更新</button>
+      <button class="btn primary" id="refresh" title="サーバーが用意した最新データ（約5分ごとに自動取得）を読み込み直します">↻ 今すぐ更新</button>
     </div>
   </header>
 
@@ -250,8 +250,8 @@ footer a{color:var(--ink-2)}
   <section class="panel detail" id="detailwrap" hidden></section>
 
   <footer>
-    <div>株価は GitHub Actions がサーバー側で Yahoo Finance から日本・米国とも自動取得し、約30分ごとに更新します（取引所により15〜20分遅延の場合あり）。市場が閉まっている時間帯は直近の終値を表示します。</div>
-    <div>ファンダメンタルズは3層構造です：<b>①株価・テクニカル＝約30分毎の自動更新</b>、<b>②PER・配当利回り・PBR・時価総額＝現在値から毎回自動計算</b>、<b>③EPS・BPS・配当・決算＝基準日付きスナップショット（決算のたびに更新）</b>。各銘柄の詳細に基準日と出典を明記しています。ラインや数値の変更は <b>HOLDINGS</b> 配列を編集してください。</div>
+    <div>株価は GitHub Actions がサーバー側で Yahoo Finance から日本・米国とも自動取得し、約5分ごとに更新します（取引所により15〜20分遅延の場合あり／サーバー混雑時は遅延あり）。「↻ 今すぐ更新」はサーバーが用意した最新データを読み込み直します。市場が閉まっている時間帯は直近の終値を表示します。</div>
+    <div>ファンダメンタルズは3層構造です：<b>①株価・テクニカル＝約5分毎の自動更新</b>、<b>②PER・配当利回り・PBR・時価総額＝現在値から毎回自動計算</b>、<b>③EPS・BPS・配当・決算＝基準日付きスナップショット（決算のたびに更新）</b>。各銘柄の詳細に基準日と出典を明記しています。ラインや数値の変更は <b>HOLDINGS</b> 配列を編集してください。</div>
     <div class="disc">本ページは情報提供目的のみで、売買を推奨するものではありません。投資判断はご自身の責任で行ってください。</div>
   </footer>
 </div>
@@ -882,7 +882,7 @@ if (removedbarEl) removedbarEl.addEventListener('click', e => {
   render();
 });
 
-try { $('#ver').textContent = 'build v24 (チャート シンプル/詳細)'; } catch(_){}
+try { $('#ver').textContent = 'build v25 (自動取得5分間隔)'; } catch(_){}
 setInterval(renderMkt, 30000);
 render();
 refresh().then(startTimer);
