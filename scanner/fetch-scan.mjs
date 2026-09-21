@@ -171,7 +171,7 @@ function analyzeOne(h, f) {
   // 時系列（直近CHART_N本）
   const cs = Math.max(0, close.length - CHART_N);
   const series = [];
-  for (let i = cs; i < close.length; i++) series.push({ d: date[i], c: r1(close[i]) });
+  for (let i = cs; i < close.length; i++) series.push({ d: date[i], c: r1(close[i]), v: Math.round(vol[i] || 0) });
   return {
     code: h.code, name: h.name, market: h.market,
     close: r1(price), prev: r1(prev),

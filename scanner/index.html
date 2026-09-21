@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#080B12">
 <link rel="icon" type="image/png" href="../favicon.png">
 <meta property="og:title" content="青天井スキャナー | 日本株ブレイクアウト検出ダッシュボード">
-<meta property="og:description" content="しこり壁を大商いで突き抜けた銘柄を検出。突破可能性インジケーターとチャートで判定。Yahoo Finance実株価で自動更新。">
+<meta property="og:description" content="しこり壁を大商いで突き抜けた銘柄を検出。価格・出来高チャートで突破の勢いを確認。Yahoo Finance実株価で自動更新。">
 <meta property="og:type" content="website">
 </head>
 <body>
@@ -149,6 +149,13 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 .stopbox .b .l{font-size:10.5px;color:var(--ink-3)}
 .stopbox .b .n{font-family:var(--mono);font-size:17px;font-weight:600;margin-top:3px}
 .stopbox .b.stop .n{color:var(--down)}
+.volcap{font-size:10.5px;color:var(--ink-3);margin-top:6px}
+.kv{display:flex;flex-direction:column;margin-top:4px}
+.kv-row{display:flex;justify-content:space-between;align-items:center;padding:8px 2px;border-bottom:1px solid var(--line)}
+.kv-row:last-child{border-bottom:none}
+.kv-l{font-size:12px;color:var(--ink-2)}
+.kv-v{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.kv-v.hot{color:var(--up)}
 .bo-head{display:flex;align-items:center;gap:14px;margin-bottom:10px}
 .bo-gauge{flex:1;height:14px;border-radius:100px;background:var(--panel-3);border:1px solid var(--line);overflow:hidden}
 .bo-fill{height:100%;border-radius:100px}
@@ -445,10 +452,36 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
       var t=i/(N-1), base;
       if(t<0.6){ base=center + Math.sin(i*0.5)*W*0.5 + Math.sin(i*0.16)*W*0.35; }
       else { var u=(t-0.6)/0.4; base=center + (end-center)*Math.pow(u,1.25) + Math.sin(i*0.5)*W*0.22*(1-u); }
-      arr.push({d:i, c:base});
+      var vv=(100+45*Math.abs(Math.sin(i*0.7)));
+      if(t>0.82) vv*=2.2;   // 終盤に大商い（ブレイク）
+      arr.push({d:i, c:base, v:Math.round(vv*1000)});
     }
     arr[N-1].c=end;
     return arr;
+  }
+  // 日次出来高チャート（大商いをハイライト＋20日平均線）
+  function volumeChart(d){
+    var s=d.series||[]; var n=s.length; if(!n) return '';
+    var W=360, H=104, padT=12, padB=22, x0=8, plotW=204, ch=H-padT-padB;
+    var vols=s.map(function(p){return p.v||0;});
+    var maxV=Math.max.apply(null,vols)||1;
+    function ma(i){var a=0,c=0;for(var j=Math.max(0,i-19);j<=i;j++){a+=vols[j];c++;}return c?a/c:0;}
+    var bw=plotW/n, bars="", maLine="";
+    for(var i=0;i<n;i++){
+      var h=vols[i]/maxV*ch, x=x0+i*bw, y=padT+ch-h, surge=vols[i]>=1.8*ma(i);
+      bars+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+Math.max(bw-0.5,0.6).toFixed(1)+'" height="'+Math.max(h,0.4).toFixed(1)+'" fill="'+(surge?"#2FD98A":"#3A4A66")+'" opacity="'+(surge?0.95:0.72)+'"/>';
+      var my=padT+ch-(ma(i)/maxV*ch);
+      maLine+=(i?"L":"M")+(x+bw/2).toFixed(1)+" "+my.toFixed(1)+" ";
+    }
+    return '<svg class="chartwrap" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="日次出来高">'+
+      '<text x="'+x0+'" y="'+(padT-2)+'" fill="#9DACC6" font-size="9" font-weight="600" font-family="IBM Plex Sans JP,sans-serif">日次出来高</text>'+
+      bars+
+      '<path d="'+maLine+'" fill="none" stroke="#22D3EE" stroke-width="1.2" opacity="0.9"/>'+
+      '<text x="'+(x0+plotW+6)+'" y="'+(padT+9)+'" fill="#22D3EE" font-size="8.5" font-family="IBM Plex Mono,monospace">20日平均</text>'+
+      '<text x="'+(x0+plotW+6)+'" y="'+(padT+ch)+'" fill="#2FD98A" font-size="8.5" font-family="IBM Plex Sans JP,sans-serif">緑=大商い</text>'+
+      '<text x="'+x0+'" y="'+(H-8)+'" fill="#5E6E8A" font-size="8" font-family="IBM Plex Sans JP,sans-serif">← 過去</text>'+
+      '<text x="'+(x0+plotW)+'" y="'+(H-8)+'" fill="#5E6E8A" font-size="8" text-anchor="end" font-family="IBM Plex Sans JP,sans-serif">現在 →</text>'+
+      '</svg>';
   }
 
   var DEMO_RAW=[
@@ -551,8 +584,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
         '<td class="r num">'+yen(r.close)+'</td>'+
         '<td><span class="badge" style="--sc:'+st.color+'"><span class="bd"></span>'+st.label+'</span>'+
             (d.recommend?'<span class="recflag">★推薦</span>':'')+(d.passScreen?'<span class="screenflag">一次通過</span>':'')+'</td>'+
-        '<td class="r"><div class="bo-mini"><div class="t"><i style="width:'+d.bo.score+'%;background:'+d.bo.color+'"></i></div>'+
-            '<span class="s" style="color:'+d.bo.color+'">'+d.bo.score+'</span></div><div class="mini lv" style="color:'+d.bo.color+'">'+d.bo.level+'</div></td>'+
+        '<td class="r"><span class="num" style="color:'+d.bo.color+';font-weight:700;font-size:16px">'+d.bo.score+'</span><div class="mini" style="color:'+d.bo.color+'">'+d.bo.level+'</div></td>'+
         '<td class="r num">'+fmt(r.wallLow)+'〜'+fmt(r.wallHigh)+'<div class="mini">出来高 '+(r.vol20!=null?r.vol20.toFixed(1):"-")+'倍</div></td>'+
         '<td class="r stopcell">'+yen(d.stop)+'<div class="mini" style="color:var(--down)">'+d.stopPct.toFixed(1)+'%</div></td>'+
       '</tr>';
@@ -630,13 +662,16 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     var r=d.raw, st=STAGES[d.stage], bo=d.bo;
     var chg=(r.close-r.wallHigh)/r.wallHigh*100;
     var dayChg = r.prev? ((r.close/r.prev-1)*100) : null;
-    var boFactors=bo.factors.map(function(f){
-      return '<div class="bo-item"><div class="bo-ir"><span class="bo-il">'+f.label+'</span><span class="bo-iv">'+f.v+' / 100</span></div>'+
-        '<div class="bo-bar"><i style="width:'+f.v+'%"></i></div><div class="bo-note">'+esc(f.note)+'</div></div>';
-    }).join("");
-    var boHtml='<div class="bo-head"><div class="bo-gauge"><div class="bo-fill" style="width:'+bo.score+'%;background:'+bo.color+'"></div></div>'+
-      '<div class="bo-meta"><span class="bo-score" style="color:'+bo.color+'">'+bo.score+'</span><span class="bo-lv" style="color:'+bo.color+'">突破可能性 '+bo.level+'</span></div></div>'+
-      '<div class="bo-verdict" style="border-left-color:'+bo.color+'">'+esc(bo.verdict)+'</div>'+boFactors;
+    var mom=0, sser=d.series||[]; if(sser.length>5){ var past=sser[Math.max(0,sser.length-20)].c; if(past>0) mom=(r.close/past-1)*100; }
+    function kv(label,val,hot){ return '<div class="kv-row"><span class="kv-l">'+label+'</span><span class="kv-v'+(hot?" hot":"")+'">'+val+'</span></div>'; }
+    var boKv='<div class="bo-verdict" style="border-left-color:'+bo.color+'"><b style="color:'+bo.color+'">突破可能性 '+bo.level+'（'+bo.score+'）</b>　'+esc(bo.verdict)+'</div>'+
+      '<div class="kv">'+
+        kv("出来高 前日比", (r.volPrev!=null?r.volPrev.toFixed(2)+"倍":"-"), (r.volPrev||0)>=1.8)+
+        kv("出来高 20日平均比", (r.vol20!=null?r.vol20.toFixed(2)+"倍":"-"), (r.vol20||0)>=1.8)+
+        kv("しこり壁 上限まで", (chg>=0?"突破 +"+chg.toFixed(1)+"%":chg.toFixed(1)+"%"), chg>=0)+
+        kv("直近20営業日 騰落", (mom>=0?"+":"")+mom.toFixed(1)+"%", mom>=0)+
+        kv("壁の厚み（集中度）", (r.conc!=null?r.conc.toFixed(0)+"%":"-"), false)+
+      '</div>';
     var checks=CHECKITEMS.map(function(c,i){
       var key=r.code+":"+i, on=!!state.checks[key];
       return '<li data-key="'+key+'" role="checkbox" aria-checked="'+on+'" tabindex="0">'+
@@ -662,10 +697,11 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
             '<span style="color:#22D3EE"><i class="dash"></i>現在値</span>'+
             '<span style="color:#F26D6D"><i class="dash"></i>損切り（壁下限）</span>'+
           '</div>'+
+          volumeChart(d)+
           '<div class="stopbox"><div class="b"><div class="l">しこり壁 価格帯</div><div class="n">'+fmt(r.wallLow)+'〜'+fmt(r.wallHigh)+'</div></div>'+
             '<div class="b stop"><div class="l">損切りライン（幅）</div><div class="n">'+yen(d.stop)+' <span style="font-size:12px">('+d.stopPct.toFixed(1)+'%)</span></div></div></div>'+
         '</div>'+
-        '<div class="isec"><h3>しこり突破 可能性インジケーター</h3>'+boHtml+'</div>'+
+        '<div class="isec"><h3>出来高と突破の目安</h3>'+boKv+'</div>'+
         '<div class="isec"><h3>人間が確認する3大ポイント</h3><ul class="check">'+checks+'</ul></div>'+
       '</div>';
     Array.prototype.forEach.call($("insp").querySelectorAll(".check li"),function(li){
@@ -686,20 +722,20 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
   }
   function renderSim(){
     var r=simInputs(), d=analyze(r), st=STAGES[d.stage], bo=breakoutIndicator({raw:r, series:[]});
-    var facts=bo.factors.map(function(f){
-      var t=f.label.replace("出来高エネルギー","出来高").replace("壁内ポジション","壁内位置").replace("上昇モメンタム","勢い(-)").replace("上値の軽さ","上値");
-      return '<div class="sb"><span class="t">'+t+'</span>'+
-        '<span class="bar"><i style="width:'+f.v+'%;background:linear-gradient(90deg,#F26D6D,#F6B01E,#22D3EE,#2FD98A);background-size:340% 100%"></i></span>'+
-        '<span class="n">'+f.v+'</span></div>';
-    }).join("");
+    var chgv=(r.close-r.wallHigh)/r.wallHigh*100;
+    function kv(l,v,hot){return '<div class="kv-row"><span class="kv-l">'+l+'</span><span class="kv-v'+(hot?" hot":"")+'">'+v+'</span></div>';}
     $("sim-out").innerHTML=
       '<div class="bignum" style="color:'+bo.color+'">'+bo.score+'</div>'+
       '<div class="biglbl">しこり突破 可能性 ・'+bo.level+'</div>'+
       '<div class="simbadge"><span class="badge" style="--sc:'+st.color+'"><span class="bd"></span>'+st.label+'</span></div>'+
-      '<div class="simbars">'+facts+'</div>'+
+      '<div class="kv">'+
+        kv("出来高 前日比", r.volPrev.toFixed(2)+"倍", r.volPrev>=1.8)+
+        kv("出来高 20日平均比", r.vol20.toFixed(2)+"倍", r.vol20>=1.8)+
+        kv("しこり壁 上限まで", (chgv>=0?"突破 +"+chgv.toFixed(1)+"%":chgv.toFixed(1)+"%"), chgv>=0)+
+        kv("壁の厚み（集中度）", r.conc.toFixed(0)+"%", false)+
+      '</div>'+
       '<div><div class="simrow"><span class="l">損切りライン（壁下限）</span><span class="v stop">'+yen(d.stop)+'</span></div>'+
-        '<div class="simrow"><span class="l">損切り幅</span><span class="v stop">'+d.stopPct.toFixed(1)+'%</span></div>'+
-        '<div class="simrow"><span class="l">壁上限比</span><span class="v">'+(((r.close-r.wallHigh)/r.wallHigh*100)>=0?"+":"")+((r.close-r.wallHigh)/r.wallHigh*100).toFixed(1)+'%</span></div></div>';
+        '<div class="simrow"><span class="l">損切り幅</span><span class="v stop">'+d.stopPct.toFixed(1)+'%</span></div></div>';
   }
   function openSim(){
     var d=DATA.filter(function(x){return x.code===state.selected;})[0]||DATA[0], r=d?d.raw:DEMO_RAW[0];
