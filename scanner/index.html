@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#080B12">
 <link rel="icon" type="image/png" href="../favicon.png">
 <meta property="og:title" content="青天井スキャナー | 日本株ブレイクアウト検出ダッシュボード">
-<meta property="og:description" content="しこり壁を大商いで突き抜けた銘柄を100点で採点し8ステージに分類。Yahoo Finance実株価で自動更新。">
+<meta property="og:description" content="しこり壁を大商いで突き抜けた銘柄を検出。突破可能性インジケーターとチャートで判定。Yahoo Finance実株価で自動更新。">
 <meta property="og:type" content="website">
 </head>
 <body>
@@ -149,6 +149,25 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 .stopbox .b .l{font-size:10.5px;color:var(--ink-3)}
 .stopbox .b .n{font-family:var(--mono);font-size:17px;font-weight:600;margin-top:3px}
 .stopbox .b.stop .n{color:var(--down)}
+.bo-head{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.bo-gauge{flex:1;height:14px;border-radius:100px;background:var(--panel-3);border:1px solid var(--line);overflow:hidden}
+.bo-fill{height:100%;border-radius:100px}
+.bo-meta{display:flex;flex-direction:column;align-items:flex-end;min-width:104px}
+.bo-score{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1}
+.bo-lv{font-size:11px;font-weight:600;margin-top:2px}
+.bo-verdict{font-size:12px;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--cyan);border-radius:8px;padding:9px 12px;line-height:1.55;margin-bottom:14px}
+.bo-item{margin-bottom:11px}
+.bo-ir{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.bo-il{font-size:12px;font-weight:600;color:var(--ink)}
+.bo-iv{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.bo-bar{height:7px;border-radius:100px;background:var(--panel-3);border:1px solid var(--line);overflow:hidden}
+.bo-bar i{display:block;height:100%;border-radius:100px;background:linear-gradient(90deg,#F26D6D,#F6B01E,#22D3EE,#2FD98A);background-size:340% 100%}
+.bo-note{font-size:10.5px;color:var(--ink-3);margin-top:3px}
+.bo-mini{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.bo-mini .t{width:60px;height:7px;border-radius:100px;background:var(--panel-3);overflow:hidden;border:1px solid var(--line)}
+.bo-mini .t i{display:block;height:100%;border-radius:100px}
+.bo-mini .s{font-family:var(--mono);font-weight:600;font-size:14px;min-width:30px;text-align:right}
+.bo-mini .lv{font-size:9.5px;font-weight:600}
 .grp{margin-bottom:14px} .grp:last-child{margin-bottom:0}
 .grp .gh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
 .grp .gh .gt{font-size:12px;font-weight:600}
@@ -267,7 +286,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
         <table>
           <thead><tr>
             <th class="r">#</th><th>コード / 銘柄</th><th class="r">現在値</th>
-            <th>ステージ</th><th class="r">総合スコア</th><th class="r">壁価格帯 / 出来高</th><th class="r">損切りライン</th>
+            <th>ステージ</th><th class="r">突破可能性</th><th class="r">壁価格帯 / 出来高</th><th class="r">損切りライン</th>
           </tr></thead>
           <tbody id="tbody"></tbody>
         </table>
@@ -278,7 +297,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 
   <footer class="foot">
     <div class="disc">
-      <b>青天井スキャナー</b> ／ 直近250営業日・40価格帯の出来高プロファイルからしこり壁を測定（直近10営業日は壁ズレ防止のため出来高計算から除外）。実データは Yahoo Finance の日足を GitHub Actions で自動取得。信用残データ未接続のため<b>需給なし換算</b>（条件1＋条件3＝75点を100点換算）で採点。投資判断は自己責任で行ってください。
+      <b>青天井スキャナー</b> ／ 現在値近辺の40価格帯の出来高プロファイルからしこり壁を測定（直近10営業日は壁ズレ防止のため出来高計算から除外）。実データは Yahoo Finance の日足を GitHub Actions で自動取得。<b>突破可能性</b>は「出来高エネルギー・壁内ポジション・上昇モメンタム・上値の軽さ」から算出。投資判断は自己責任で行ってください。
     </div>
     <div class="num" id="foot-r"></div>
   </footer>
@@ -287,26 +306,17 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 <div class="overlay" id="sim-overlay" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sim-title">
     <div class="modal-h">
-      <div><h2 id="sim-title">インタラクティブ・シミュレーター</h2><p>数値を変更するとスコア・ステージ・損切りが即時再計算されます</p></div>
+      <div><h2 id="sim-title">突破可能性シミュレーター</h2><p>数値を変更すると突破可能性・ステージ・損切りが即時再計算されます（上昇モメンタムは実データのみ反映）</p></div>
       <button class="xbtn" id="sim-close" type="button" aria-label="閉じる">×</button>
     </div>
     <div class="modal-b">
       <div class="form" id="sim-form">
         <div class="field"><label for="s_close">株価（終値・円）</label><input type="number" id="s_close" step="1"></div>
-        <div class="field"><label for="s_wl">壁 下限（円）</label><input type="number" id="s_wl" step="1"></div>
-        <div class="field"><label for="s_wh">壁 上限（円）</label><input type="number" id="s_wh" step="1"></div>
+        <div class="field"><label for="s_wl">しこり壁 下限（円）</label><input type="number" id="s_wl" step="1"></div>
+        <div class="field"><label for="s_wh">しこり壁 上限（円）</label><input type="number" id="s_wh" step="1"></div>
         <div class="field"><label for="s_conc">壁の集中度（％）</label><input type="number" id="s_conc" step="0.1"></div>
-        <div class="field"><label for="s_box">ボックス滞留（％）</label><input type="number" id="s_box" step="1"></div>
         <div class="field"><label for="s_vp">出来高 前日比（倍）</label><input type="number" id="s_vp" step="0.1"></div>
         <div class="field"><label for="s_v20">出来高 20日平均比（倍）</label><input type="number" id="s_v20" step="0.1"></div>
-        <div class="field"><label for="s_buy">信用買残 8週増減（％）</label><input type="number" id="s_buy" step="0.1"></div>
-        <div class="field"><label for="s_sell">信用売残 8週増減（％）</label><input type="number" id="s_sell" step="0.1"></div>
-        <div class="field"><label for="s_ratio">貸借倍率（倍）</label><input type="number" id="s_ratio" step="0.01"></div>
-        <div class="toggles">
-          <label class="toggle"><input type="checkbox" id="s_gyaku">逆日歩 発生</label>
-          <label class="toggle"><input type="checkbox" id="s_support">上抜け後 押し目で壁を維持</label>
-          <label class="toggle"><input type="checkbox" id="s_nocredit">信用残データなし（75点→100点換算）</label>
-        </div>
       </div>
       <div class="simout" id="sim-out"></div>
     </div>
@@ -380,6 +390,42 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     };
   }
 
+  // しこり突破の可能性インジケーター（採点ではなく「壁を抜ける確度」を評価）
+  function breakoutIndicator(item){
+    var r=item.raw, wallH=r.wallHigh, wallL=r.wallLow, close=r.close;
+    var v=Math.max(r.vol20||0, r.volPrev||0);
+    // ① 出来高エネルギー：大商いで壁を突き抜ける買い圧力
+    var energy=clamp((v-1)/2*100,0,100);                 // 1.0倍→0, 3.0倍→100
+    // ② 壁内ポジション：壁上限に近い/抜けた直後ほど高く、上放れし過ぎ（青天井進行中）は下げる
+    var pos, over=(close-wallH)/wallH*100;
+    if(close>wallH){ pos = over<=5?100 : over<=10?90 : over<=20?60 : clamp(60-(over-20)*2,10,60); }
+    else if(close>=wallL){ pos=(wallH>wallL?(close-wallL)/(wallH-wallL):1)*90; }
+    else { pos=clamp((close-wallL*0.95)/((wallL*0.05)||1),0,1)*30; }
+    // ③ 上昇モメンタム：壁へ向かう勢い（約20営業日の騰落）
+    var mom=0, s=item.series||[];
+    if(s.length>5){ var past=s[Math.max(0,s.length-20)].c; if(past>0) mom=(close/past-1)*100; }
+    var momo=clamp((mom+8)/16*100,0,100);                // -8%→0, 0%→50, +8%→100
+    // ④ 上値の軽さ：壁が薄い（集中度が低い）ほど抜けやすい
+    var light=clamp((28-(r.conc||0))/28*100,0,100);
+    var score=Math.round(clamp(energy*0.42+pos*0.30+momo*0.18+light*0.10,0,100));
+    if(close>wallH && (r.vol20||0)>=1.8) score=Math.max(score,82);   // 大商い伴う上抜け＝確度上限側
+    var level,color;
+    if(score>=75){level="非常に高い";color="#2FD98A";}
+    else if(score>=55){level="高い";color="#22D3EE";}
+    else if(score>=35){level="中";color="#F6B01E";}
+    else {level="低い";color="#F26D6D";}
+    var verdict;
+    if(close>wallH){ verdict=(r.vol20>=1.8?"大商いを伴い壁上限（"+fmt(wallH)+"円）を突破。ブレイク確定圏。":"壁上限を上抜けたが出来高不足。だまし警戒。"); }
+    else if(close>=wallL){ verdict="現在値はしこり壁の中。上限 "+fmt(wallH)+"円を大商いで抜ければ青天井。"; }
+    else { verdict="壁の少し下。壁下限 "+fmt(wallL)+"円からの反発と出来高増を待つ局面。"; }
+    return {score:score, level:level, color:color, verdict:verdict, factors:[
+      {label:"出来高エネルギー", v:Math.round(energy), note:"直近最大 "+v.toFixed(1)+"倍（大商いで壁を突き抜ける買い圧力）"},
+      {label:"壁内ポジション",   v:Math.round(pos),    note:(close>wallH?(over<=10?"壁上限を突破（フレッシュ）":"壁上限から上放れ（飛び乗り警戒）"):(close>=wallL?"壁の中（上限に近いほど突破間近）":"壁の少し下（接近中）"))},
+      {label:"上昇モメンタム",   v:Math.round(momo),   note:"約20営業日で "+(mom>=0?"+":"")+mom.toFixed(1)+"%"},
+      {label:"上値の軽さ",       v:Math.round(light),  note:"壁の厚み（集中度）"+(r.conc!=null?r.conc.toFixed(0):"-")+"%（薄いほど抜けやすい）"}
+    ]};
+  }
+
   // デモ用：40帯プロファイルと時系列を決定論的に合成
   function genProfile(r){
     var n=40, arr=[], step=(r.yearHigh-r.yearLow)/n;
@@ -420,10 +466,11 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     var a=analyze(raw);
     a.profile = raw.profile && raw.profile.length ? raw.profile : genProfile(raw);
     a.series  = raw.series && raw.series.length ? raw.series : synthSeries(raw);
+    a.bo = breakoutIndicator(a);
     return a;
   }
   function setDataset(rawList, source){
-    DATA = rawList.map(buildItem).sort(function(x,y){return y.total-x.total;});
+    DATA = rawList.map(buildItem).sort(function(x,y){return y.bo.score-x.bo.score;});
     SOURCE = source;
     if(!state.selected || !DATA.some(function(d){return d.code===state.selected;})){
       var rec=DATA.filter(function(d){return d.recommend;});
@@ -448,7 +495,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
         '<span class="sep">|</span><span class="meta">'+when+' 更新</span>'+
         '<span class="sep">|</span><span class="meta">一次スクリーニング通過 '+pass+'/'+DATA.length+'</span>'+
         (SOURCE.failed?'<span class="sep">|</span><span class="warn">取得失敗 '+SOURCE.failed+'</span>':'')+
-        '<span class="sep">|</span><span class="warn">需給なし換算</span>';
+        '<span class="sep">|</span><span class="meta">突破可能性で評価</span>';
     }else if(SOURCE.mode==="demo"){
       el.innerHTML='<span class="dot demo"></span><span class="lbl">デモデータ</span>'+
         '<span class="sep">|</span><span class="meta">検証用プリセット5銘柄</span>'+
@@ -461,15 +508,15 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
   function renderSummary(){
     var n=DATA.length;
     var brk=DATA.filter(function(d){return d.stage==="breakout";}).length;
-    var high=DATA.filter(function(d){return d.total>=80;}).length;
-    var avg=n?DATA.reduce(function(s,d){return s+d.total;},0)/n:0;
+    var hot=DATA.filter(function(d){return d.bo.score>=55;}).length;
+    var avg=n?DATA.reduce(function(s,d){return s+d.bo.score;},0)/n:0;
     var rec=DATA.filter(function(d){return d.recommend;}).length;
     var cards=[
       {cls:"c-scan", k:"スキャン対象銘柄数", v:fmt(n),        u:"銘柄"},
       {cls:"c-rec",  k:"推薦（しこり内/接近）", v:fmt(rec),    u:"銘柄"},
       {cls:"c-break",k:"ブレイク確定",       v:fmt(brk),      u:"銘柄"},
-      {cls:"c-high", k:"高得点（80点以上）", v:fmt(high),     u:"銘柄"},
-      {cls:"c-avg",  k:"平均スコア",         v:avg.toFixed(1),u:"点"}
+      {cls:"c-high", k:"突破可能性 高い以上", v:fmt(hot),      u:"銘柄"},
+      {cls:"c-avg",  k:"平均 突破可能性",     v:avg.toFixed(0),u:""}
     ];
     $("summary").innerHTML=cards.map(function(c){
       return '<div class="stat '+c.cls+'"><div class="k">'+c.k+'</div><div class="v">'+c.v+'<span class="u">'+c.u+'</span></div></div>';
@@ -497,15 +544,15 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     var tb=$("tbody");
     if(!list.length){tb.innerHTML='<tr><td colspan="7" style="padding:28px;text-align:center;color:var(--ink-3)">該当ステージの銘柄はありません</td></tr>';return;}
     tb.innerHTML=list.map(function(d){
-      var r=d.raw, st=STAGES[d.stage], rankOverall=DATA.indexOf(d)+1, gc=scoreColor(d.total);
+      var r=d.raw, st=STAGES[d.stage], rankOverall=DATA.indexOf(d)+1;
       return '<tr data-code="'+r.code+'" aria-selected="'+(state.selected===r.code)+'">'+
         '<td class="r"><span class="rank'+(rankOverall<=3?" top":"")+'">'+rankOverall+'</span></td>'+
         '<td><div class="code">'+esc(r.code)+'</div><div class="nm">'+esc(r.name)+'</div></td>'+
         '<td class="r num">'+yen(r.close)+'</td>'+
         '<td><span class="badge" style="--sc:'+st.color+'"><span class="bd"></span>'+st.label+'</span>'+
             (d.recommend?'<span class="recflag">★推薦</span>':'')+(d.passScreen?'<span class="screenflag">一次通過</span>':'')+'</td>'+
-        '<td class="r"><div class="gauge"><div class="track"><div class="fill" style="width:'+Math.min(d.total,100)+'%;--gc:'+gc+'"></div></div>'+
-            '<span class="sc" style="color:'+gc+'">'+d.total.toFixed(1)+'</span></div></td>'+
+        '<td class="r"><div class="bo-mini"><div class="t"><i style="width:'+d.bo.score+'%;background:'+d.bo.color+'"></i></div>'+
+            '<span class="s" style="color:'+d.bo.color+'">'+d.bo.score+'</span></div><div class="mini lv" style="color:'+d.bo.color+'">'+d.bo.level+'</div></td>'+
         '<td class="r num">'+fmt(r.wallLow)+'〜'+fmt(r.wallHigh)+'<div class="mini">出来高 '+(r.vol20!=null?r.vol20.toFixed(1):"-")+'倍</div></td>'+
         '<td class="r stopcell">'+yen(d.stop)+'<div class="mini" style="color:var(--down)">'+d.stopPct.toFixed(1)+'%</div></td>'+
       '</tr>';
@@ -580,22 +627,16 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
   function renderInspector(){
     var d=DATA.filter(function(x){return x.code===state.selected;})[0]||DATA[0];
     if(!d){ $("insp").innerHTML='<div class="card"><div class="isec"><p style="color:var(--ink-3)">銘柄がありません</p></div></div>'; return; }
-    var r=d.raw, st=STAGES[d.stage], gc=scoreColor(d.total);
+    var r=d.raw, st=STAGES[d.stage], bo=d.bo;
     var chg=(r.close-r.wallHigh)/r.wallHigh*100;
     var dayChg = r.prev? ((r.close/r.prev-1)*100) : null;
-    var G1=[{n:"条件1：価格帯別出来高の壁",v:d.cond1,max:40,g:1},{n:"条件2：信用需給の改善",v:d.cond2,max:25,g:2},{n:"条件3：トリガーの確認",v:d.cond3,max:35,g:3}];
-    var barsHtml=G1.map(function(gr){
-      if(gr.g===2 && d.noCredit){
-        return '<div class="grp"><div class="gh"><span class="gt">'+gr.n+'</span><span class="gv">— / 25</span></div>'+
-          '<div class="note">信用残データ未接続のため<b>需給なし換算</b>。条件1（'+d.cond1.toFixed(1)+'/40）＋条件3（'+d.cond3.toFixed(1)+'/35）＝75点を100点に換算して総合スコアを算出。</div></div>';
-      }
-      var its=d.items.filter(function(it){return it.g===gr.g;});
-      return '<div class="grp"><div class="gh"><span class="gt">'+gr.n+'</span><span class="gv"><b>'+gr.v.toFixed(1)+'</b> / '+gr.max+'</span></div>'+
-        its.map(function(it){
-          return '<div class="item"><span class="il">'+it.label+'</span><span class="iv"><b>'+it.v.toFixed(1)+'</b>/'+it.max+'</span>'+
-            '<span class="bar"><i style="width:'+(it.v/it.max*100)+'%;--bc:'+it.c+'"></i></span></div>';
-        }).join("")+'</div>';
+    var boFactors=bo.factors.map(function(f){
+      return '<div class="bo-item"><div class="bo-ir"><span class="bo-il">'+f.label+'</span><span class="bo-iv">'+f.v+' / 100</span></div>'+
+        '<div class="bo-bar"><i style="width:'+f.v+'%"></i></div><div class="bo-note">'+esc(f.note)+'</div></div>';
     }).join("");
+    var boHtml='<div class="bo-head"><div class="bo-gauge"><div class="bo-fill" style="width:'+bo.score+'%;background:'+bo.color+'"></div></div>'+
+      '<div class="bo-meta"><span class="bo-score" style="color:'+bo.color+'">'+bo.score+'</span><span class="bo-lv" style="color:'+bo.color+'">突破可能性 '+bo.level+'</span></div></div>'+
+      '<div class="bo-verdict" style="border-left-color:'+bo.color+'">'+esc(bo.verdict)+'</div>'+boFactors;
     var checks=CHECKITEMS.map(function(c,i){
       var key=r.code+":"+i, on=!!state.checks[key];
       return '<li data-key="'+key+'" role="checkbox" aria-checked="'+on+'" tabindex="0">'+
@@ -610,8 +651,8 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
             '<div><div class="t-price num">'+yen(r.close)+'</div>'+dchgHtml+'<div class="t-chg" style="color:var(--ink-3)">壁上限比 '+(chg>=0?"+":"")+chg.toFixed(1)+'%</div></div>'+
           '</div>'+
           '<div class="r2"><span class="badge" style="--sc:'+st.color+'"><span class="bd"></span>'+st.label+'</span>'+
-            '<span class="bigscore" style="color:'+gc+';border:1px solid '+gc+'55;background:'+gc+'12">'+d.total.toFixed(1)+' 点</span>'+
-            (d.recommend?'<span class="recflag">★推薦（しこり内/接近）</span>':'')+(d.passScreen?'<span class="screenflag">一次通過</span>':'')+(d.noCredit?'<span class="badgeflag">需給なし換算</span>':'')+'</div>'+
+            '<span class="bigscore" style="color:'+bo.color+';border:1px solid '+bo.color+'55;background:'+bo.color+'12">突破可能性 '+bo.score+' ・'+bo.level+'</span>'+
+            (d.recommend?'<span class="recflag">★推薦（しこり内/接近）</span>':'')+(d.passScreen?'<span class="screenflag">一次通過</span>':'')+'</div>'+
         '</div>'+
         '<div class="isec"><h3>価格推移としこり壁（直近'+(d.series.length)+'営業日）</h3>'+chartCombined(d)+
           '<div class="chart-legend">'+
@@ -624,7 +665,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
           '<div class="stopbox"><div class="b"><div class="l">しこり壁 価格帯</div><div class="n">'+fmt(r.wallLow)+'〜'+fmt(r.wallHigh)+'</div></div>'+
             '<div class="b stop"><div class="l">損切りライン（幅）</div><div class="n">'+yen(d.stop)+' <span style="font-size:12px">('+d.stopPct.toFixed(1)+'%)</span></div></div></div>'+
         '</div>'+
-        '<div class="isec"><h3>12項目 採点内訳（100点満点）</h3>'+barsHtml+'</div>'+
+        '<div class="isec"><h3>しこり突破 可能性インジケーター</h3>'+boHtml+'</div>'+
         '<div class="isec"><h3>人間が確認する3大ポイント</h3><ul class="check">'+checks+'</ul></div>'+
       '</div>';
     Array.prototype.forEach.call($("insp").querySelectorAll(".check li"),function(li){
@@ -640,24 +681,22 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
   function simInputs(){
     return { code:"SIM", name:"シミュレーション",
       close:+$("s_close").value, wallLow:+$("s_wl").value, wallHigh:+$("s_wh").value,
-      conc:+$("s_conc").value, box:+$("s_box").value, volPrev:+$("s_vp").value, vol20:+$("s_v20").value,
-      buy:+$("s_buy").value, sell:+$("s_sell").value, ratio:+$("s_ratio").value,
-      gyaku:$("s_gyaku").checked, supportConfirmed:$("s_support").checked, noCredit:$("s_nocredit").checked, agedDays:0 };
+      conc:+$("s_conc").value, volPrev:+$("s_vp").value, vol20:+$("s_v20").value,
+      box:0, buy:0, sell:0, ratio:0, gyaku:false, supportConfirmed:false, noCredit:true, agedDays:0 };
   }
   function renderSim(){
-    var r=simInputs(), d=analyze(r), st=STAGES[d.stage], gc=scoreColor(d.total);
-    var gt=[{v:d.cond1,max:40},{v:d.cond2,max:25},{v:d.cond3,max:35}];
-    var simbars=gt.map(function(g,i){
-      var col=i===0?"#22D3EE":i===1?"#2FD98A":"#F6B01E", muted=(i===1&&r.noCredit);
-      return '<div class="sb"><span class="t">'+(i===0?"条件1":i===1?"条件2":"条件3")+'</span>'+
-        '<span class="bar"><i style="width:'+(muted?0:g.v/g.max*100)+'%;background:'+col+'"></i></span>'+
-        '<span class="n">'+(muted?"換算":g.v.toFixed(1)+"/"+g.max)+'</span></div>';
+    var r=simInputs(), d=analyze(r), st=STAGES[d.stage], bo=breakoutIndicator({raw:r, series:[]});
+    var facts=bo.factors.map(function(f){
+      var t=f.label.replace("出来高エネルギー","出来高").replace("壁内ポジション","壁内位置").replace("上昇モメンタム","勢い(-)").replace("上値の軽さ","上値");
+      return '<div class="sb"><span class="t">'+t+'</span>'+
+        '<span class="bar"><i style="width:'+f.v+'%;background:linear-gradient(90deg,#F26D6D,#F6B01E,#22D3EE,#2FD98A);background-size:340% 100%"></i></span>'+
+        '<span class="n">'+f.v+'</span></div>';
     }).join("");
     $("sim-out").innerHTML=
-      '<div class="bignum" style="color:'+gc+'">'+d.total.toFixed(1)+'</div>'+
-      '<div class="biglbl">総合スコア（100点満点）'+(r.noCredit?' ・需給なし換算':'')+'</div>'+
+      '<div class="bignum" style="color:'+bo.color+'">'+bo.score+'</div>'+
+      '<div class="biglbl">しこり突破 可能性 ・'+bo.level+'</div>'+
       '<div class="simbadge"><span class="badge" style="--sc:'+st.color+'"><span class="bd"></span>'+st.label+'</span></div>'+
-      '<div class="simbars">'+simbars+'</div>'+
+      '<div class="simbars">'+facts+'</div>'+
       '<div><div class="simrow"><span class="l">損切りライン（壁下限）</span><span class="v stop">'+yen(d.stop)+'</span></div>'+
         '<div class="simrow"><span class="l">損切り幅</span><span class="v stop">'+d.stopPct.toFixed(1)+'%</span></div>'+
         '<div class="simrow"><span class="l">壁上限比</span><span class="v">'+(((r.close-r.wallHigh)/r.wallHigh*100)>=0?"+":"")+((r.close-r.wallHigh)/r.wallHigh*100).toFixed(1)+'%</span></div></div>';
@@ -665,9 +704,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
   function openSim(){
     var d=DATA.filter(function(x){return x.code===state.selected;})[0]||DATA[0], r=d?d.raw:DEMO_RAW[0];
     $("s_close").value=r.close; $("s_wl").value=r.wallLow; $("s_wh").value=r.wallHigh;
-    $("s_conc").value=r.conc; $("s_box").value=Math.round(r.box); $("s_vp").value=r.volPrev; $("s_v20").value=r.vol20;
-    $("s_buy").value=r.buy||0; $("s_sell").value=r.sell||0; $("s_ratio").value=r.ratio||1.0;
-    $("s_gyaku").checked=!!r.gyaku; $("s_support").checked=!!r.supportConfirmed; $("s_nocredit").checked=!!r.noCredit;
+    $("s_conc").value=r.conc; $("s_vp").value=r.volPrev; $("s_v20").value=r.vol20;
     $("sim-overlay").hidden=false; renderSim();
   }
   function closeSim(){$("sim-overlay").hidden=true;}
@@ -677,14 +714,14 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     lines.push("📊 青天井スキャナー 定時配信（平日17:40）");
     lines.push("集計 "+TODAY+" ／ "+(SOURCE.mode==="live"?"実データ Yahoo Finance":"デモデータ")+(SOURCE.mode==="live"?"（需給なし換算）":""));
     lines.push("");
-    var high=DATA.filter(function(d){return d.total>=80;});
-    var avg=DATA.length?DATA.reduce(function(s,d){return s+d.total;},0)/DATA.length:0;
+    var hot=DATA.filter(function(d){return d.bo.score>=55;});
+    var avg=DATA.length?DATA.reduce(function(s,d){return s+d.bo.score;},0)/DATA.length:0;
     var rec=DATA.filter(function(d){return d.recommend;});
-    lines.push("🎯 推薦（しこり壁の中／少し下＝ブレイク前の仕込み場）: "+rec.length+"銘柄 ／ 高得点80点以上: "+high.length+"銘柄 ／ 平均"+avg.toFixed(1)+"点");
+    lines.push("🎯 推薦（しこり内/接近）: "+rec.length+"銘柄 ／ 突破可能性 高い以上: "+hot.length+"銘柄 ／ 平均可能性 "+avg.toFixed(0));
     function pushStock(d,i){
       var r=d.raw, st=STAGES[d.stage];
-      var icon=d.total>=80?"🟢":d.total>=60?"🔵":d.total>=40?"🟡":"⚪";
-      lines.push((i+1)+". ["+r.code+"] "+r.name+"  "+d.total.toFixed(1)+"点 "+icon+st.label+(d.recommend?" ★推薦":"")+(d.passScreen?" ✅一次通過":""));
+      var icon=d.bo.score>=75?"🟢":d.bo.score>=55?"🔵":d.bo.score>=35?"🟡":"⚪";
+      lines.push((i+1)+". ["+r.code+"] "+r.name+"  突破可能性 "+d.bo.score+"("+d.bo.level+") "+icon+st.label+(d.recommend?" ★推薦":"")+(d.passScreen?" ✅一次通過":""));
       lines.push("   現在値 "+yen(r.close)+" / 壁 "+fmt(r.wallLow)+"〜"+fmt(r.wallHigh)+" / 出来高 "+(r.vol20!=null?r.vol20.toFixed(1):"-")+"倍");
       lines.push("   損切り "+yen(d.stop)+"（"+d.stopPct.toFixed(1)+"%）");
     }
