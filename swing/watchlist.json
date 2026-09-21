@@ -7,6 +7,13 @@
       "name": "コカコーラ",
       "market": "米国",
       "cur": "USD"
+    },
+    {
+      "code": "NWSA",
+      "yahoo": "NWSA",
+      "name": "ニューズ　コーポレーション",
+      "market": "米国",
+      "cur": "USD"
     }
   ]
 }
