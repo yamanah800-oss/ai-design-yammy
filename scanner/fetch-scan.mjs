@@ -154,6 +154,30 @@ function stageHelpers(high, low, close, wallLow, wallHigh) {
   return { agedDays: aged, supportConfirmed };
 }
 
+// バックテスト（過去2年）：直近50日高値を大商い(20日比1.8倍以上)でブレイクした日を
+// エントリーとし、利確+10% / 損切り-5% / 保有20営業日で勝敗を判定して実測勝率を出す。
+function backtest(high, low, close, vol) {
+  const n = close.length, LOOK = 50, GAP = 10, VOLX = 1.5, TGT = 0.10, STP = 0.05, HOLD = 20;
+  const ma20 = i => { let a = 0, c = 0; for (let j = Math.max(0, i - 19); j <= i; j++) { a += vol[j]; c++; } return c ? a / c : 0; };
+  let trials = 0, wins = 0;
+  for (let t = LOOK + GAP + 1; t < n - 1; t++) {
+    let R = -Infinity;
+    for (let j = t - GAP - LOOK; j < t - GAP; j++) { if (j >= 0 && close[j] > R) R = close[j]; }  // 直近50日の終値ベース高値（直近10日除外）
+    if (!isFinite(R)) continue;
+    if (!(close[t] > R && close[t - 1] <= R)) continue;   // 直近高値を終値で上抜けた最初の日
+    if (!(vol[t] >= VOLX * ma20(t))) continue;            // 大商いを伴う
+    const entry = close[t], tp = entry * (1 + TGT), sl = entry * (1 - STP);
+    let decided = false, win = false, end = Math.min(n - 1, t + HOLD);
+    for (let k = t + 1; k <= end; k++) {
+      if (low[k] <= sl) { decided = true; win = false; break; }   // 損切り優先（同日両到達は保守的に負け）
+      if (high[k] >= tp) { decided = true; win = true; break; }
+    }
+    if (!decided) win = close[end] > entry;               // 期限切れ→終値がエントリー超なら勝ち
+    trials++; if (win) wins++;
+  }
+  return { trials, wins, winRate: trials >= 3 ? Math.round(wins / trials * 100) : null };
+}
+
 function analyzeOne(h, f) {
   const N = f.close.length;
   if (N < 60) throw new Error('データ不足 (' + N + '営業日)');
@@ -172,6 +196,7 @@ function analyzeOne(h, f) {
   const cs = Math.max(0, close.length - CHART_N);
   const series = [];
   for (let i = cs; i < close.length; i++) series.push({ d: date[i], c: r1(close[i]), v: Math.round(vol[i] || 0) });
+  const bt = backtest(f.high, f.low, f.close, f.vol);        // 過去2年で実測
   return {
     code: h.code, name: h.name, market: h.market,
     close: r1(price), prev: r1(prev),
@@ -181,6 +206,7 @@ function analyzeOne(h, f) {
     yearLow: wall.yearLow, yearHigh: wall.yearHigh,
     tradingValueOku: r2(tradingValue / 1e8), avgVol3m: Math.round(avg3m), volLast: Math.round(volLast),
     passScreen, noCredit: true,
+    winRate: bt.winRate, trials: bt.trials, wins: bt.wins,   // 実測勝率（過去2年）
     profile: wall.profile, series,
     updatedAt: f.time,
   };
@@ -192,14 +218,21 @@ for (const h of UNIVERSE) {
     const f = await fetchOHLCV(h.yahoo, '2y');
     const rec = analyzeOne(h, f);
     out.stocks.push(rec);
-    console.log(`OK   ${h.code} ${h.name}  close=${rec.close} 壁=${rec.wallLow}〜${rec.wallHigh} 集中=${rec.conc}% 出来高20=${rec.vol20}x screen=${rec.passScreen}`);
+    console.log(`OK   ${h.code} ${h.name}  close=${rec.close} 壁=${rec.wallLow}〜${rec.wallHigh} 集中=${rec.conc}% 出来高20=${rec.vol20}x 勝率=${rec.winRate==null?'-':rec.winRate+'%'}(${rec.trials}回)`);
   } catch (e) {
     out.failed.push({ code: h.code, reason: e.message });
     console.log(`FAIL ${h.code} ${h.name} (${h.yahoo}) : ${e.message}`);
   }
 }
-// 直近の上抜け/接近を上位に感じられるよう、既定はスコアではなくコード順のまま保存（採点はページ側）
+// 戦略全体の実測勝率（全銘柄の試行を合算）
+let tt = 0, tw = 0;
+for (const s of out.stocks) { if (s.trials) { tt += s.trials; tw += s.wins; } }
+out.strategy = {
+  trials: tt, wins: tw, winRate: tt ? Math.round(tw / tt * 100) : null,
+  rule: '直近50日高値を大商い(20日平均比1.8倍以上)でブレイク→利確+10%/損切り-5%/保有20営業日（過去約2年）',
+};
 try { mkdirSync('scanner', { recursive: true }); } catch (_) {}
 writeFileSync('scanner/data.json', JSON.stringify(out));
+console.log(`\n戦略実測勝率 ${out.strategy.winRate==null?'-':out.strategy.winRate+'%'} （${tw}/${tt}回）`);
 console.log(`\nwrote scanner/data.json — ${out.stocks.length}/${UNIVERSE.length} 銘柄, ${out.failed.length} 失敗`);
 if (out.stocks.length === 0) process.exit(1);
