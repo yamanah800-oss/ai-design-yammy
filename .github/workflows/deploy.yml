@@ -40,6 +40,8 @@ jobs:
 
       - name: Fetch breakout scanner data (server-side, no CORS)
         continue-on-error: true
+        env:
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: node scanner/fetch-scan.mjs
 
       - name: Upload artifact

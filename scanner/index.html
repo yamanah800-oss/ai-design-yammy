@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#080B12">
 <link rel="icon" type="image/png" href="../favicon.png">
 <meta property="og:title" content="青天井スキャナー | 日本株ブレイクアウト検出ダッシュボード">
-<meta property="og:description" content="過去2年のバックテストで実測した勝率の高い順にランキング。エントリー価格・損切り・利確を明示。Yahoo Finance実株価。">
+<meta property="og:description" content="テクニカル（突破可能性）×ファンダメンタルの2軸で日本株ブレイクを検出。しこり壁・エントリー価格・出来高チャート。Yahoo Finance実株価。">
 <meta property="og:type" content="website">
 </head>
 <body>
@@ -293,7 +293,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
         <table>
           <thead><tr>
             <th class="r">#</th><th>コード / 銘柄</th><th class="r">現在値</th>
-            <th>ステージ</th><th class="r">勝率</th><th class="r">エントリー / 壁</th><th class="r">損切りライン</th>
+            <th>ステージ</th><th class="r">突破可能性</th><th class="r">エントリー / 壁</th><th class="r">損切りライン</th>
           </tr></thead>
           <tbody id="tbody"></tbody>
         </table>
@@ -304,7 +304,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 
   <footer class="foot">
     <div class="disc">
-      <b>青天井スキャナー</b> ／ 現在値近辺の40価格帯の出来高プロファイルからしこり壁を測定（直近10営業日は壁ズレ防止のため出来高計算から除外）。実データは Yahoo Finance の日足を GitHub Actions で自動取得。<b>エントリー価格＝しこり壁の上限（ブレイクライン）</b>、損切り＝壁下限。<b>実測勝率</b>は過去約2年の日足でバックテスト（直近50日高値を大商い＝20日平均比1.5倍以上でブレイク→利確+10%／損切り-5%／保有20営業日）した実績値で、各銘柄に試行回数を併記。試行3回未満の銘柄・デモは「推定」（目安）と表示。過去の成績は将来を保証しません。投資判断は自己責任で行ってください。
+      <b>青天井スキャナー</b> ／ 現在値近辺の40価格帯の出来高プロファイルからしこり壁を測定（直近10営業日は壁ズレ防止のため出来高計算から除外）。株価・出来高は Yahoo Finance の日足を GitHub Actions で自動取得。<b>エントリー価格＝しこり壁の上限（ブレイクライン）</b>、損切り＝壁下限。<b>テクニカル（突破可能性）× ファンダメンタル</b>の2軸で確認。ファンダ（業績・PER/PBR・ROE・自己資本比率）は J-Quants API（無料・要APIキー）連携で自動表示、未設定時は定性チェックで確認します。投資判断は自己責任で行ってください。
     </div>
     <div class="num" id="foot-r"></div>
   </footer>
@@ -517,13 +517,11 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     a.profile = raw.profile && raw.profile.length ? raw.profile : genProfile(raw);
     a.series  = raw.series && raw.series.length ? raw.series : synthSeries(raw);
     a.bo = breakoutIndicator(a);
-    a.winRateReal = (raw.winRate!=null);          // data.jsonにバックテスト実測値がある
-    a.winRate = a.winRateReal ? raw.winRate : estimateWinRate(a);
-    a.trials = raw.trials||0;
+    a.fund = raw.fund||null;
     return a;
   }
   function setDataset(rawList, source){
-    DATA = rawList.map(buildItem).sort(function(x,y){return (y.winRate-x.winRate) || (y.bo.score-x.bo.score);});
+    DATA = rawList.map(buildItem).sort(function(x,y){return (y.bo.score-x.bo.score) || ((y.recommend?1:0)-(x.recommend?1:0));});
     SOURCE = source;
     if(!state.selected || !DATA.some(function(d){return d.code===state.selected;})){
       var rec=DATA.filter(function(d){return d.recommend;});
@@ -548,7 +546,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
         '<span class="sep">|</span><span class="meta">'+when+' 更新</span>'+
         '<span class="sep">|</span><span class="meta">一次スクリーニング通過 '+pass+'/'+DATA.length+'</span>'+
         (SOURCE.failed?'<span class="sep">|</span><span class="warn">取得失敗 '+SOURCE.failed+'</span>':'')+
-        ((SOURCE.strategy&&SOURCE.strategy.winRate!=null)?'<span class="sep">|</span><span class="meta">戦略実測勝率 '+SOURCE.strategy.winRate+'%（過去2年 '+SOURCE.strategy.trials+'回）</span>':'');
+        '<span class="sep">|</span><span class="meta">'+((SOURCE.fundamentals&&SOURCE.fundamentals.source)?'ファンダ: '+SOURCE.fundamentals.source:'ファンダ: 定性チェック（J-Quants未設定）')+'</span>';
     }else if(SOURCE.mode==="demo"){
       el.innerHTML='<span class="dot demo"></span><span class="lbl">デモデータ</span>'+
         '<span class="sep">|</span><span class="meta">検証用プリセット5銘柄</span>'+
@@ -561,15 +559,15 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
   function renderSummary(){
     var n=DATA.length;
     var brk=DATA.filter(function(d){return d.stage==="breakout";}).length;
-    var hot=DATA.filter(function(d){return d.winRate>=60;}).length;
-    var avg=n?DATA.reduce(function(s,d){return s+d.winRate;},0)/n:0;
+    var hot=DATA.filter(function(d){return d.bo.score>=55;}).length;
+    var avg=n?DATA.reduce(function(s,d){return s+d.bo.score;},0)/n:0;
     var rec=DATA.filter(function(d){return d.recommend;}).length;
     var cards=[
       {cls:"c-scan", k:"スキャン対象銘柄数", v:fmt(n),        u:"銘柄"},
       {cls:"c-rec",  k:"推薦（しこり内/接近）", v:fmt(rec),    u:"銘柄"},
       {cls:"c-break",k:"ブレイク確定",       v:fmt(brk),      u:"銘柄"},
-      {cls:"c-high", k:"勝率 60%以上",   v:fmt(hot),      u:"銘柄"},
-      {cls:"c-avg",  k:"平均 勝率",       v:avg.toFixed(0),u:"%"}
+      {cls:"c-high", k:"突破可能性 高以上", v:fmt(hot),      u:"銘柄"},
+      {cls:"c-avg",  k:"平均 突破可能性",   v:avg.toFixed(0),u:""}
     ];
     $("summary").innerHTML=cards.map(function(c){
       return '<div class="stat '+c.cls+'"><div class="k">'+c.k+'</div><div class="v">'+c.v+'<span class="u">'+c.u+'</span></div></div>';
@@ -604,7 +602,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
         '<td class="r num">'+yen(r.close)+'</td>'+
         '<td><span class="badge" style="--sc:'+st.color+'"><span class="bd"></span>'+st.label+'</span>'+
             (d.recommend?'<span class="recflag">★推薦</span>':'')+(d.passScreen?'<span class="screenflag">一次通過</span>':'')+'</td>'+
-        '<td class="r"><span class="num" style="color:'+wrColor(d.winRate)+';font-weight:700;font-size:17px">'+d.winRate+'%</span><div class="mini" style="color:var(--ink-3)">'+(d.winRateReal?"実測 "+d.trials+"回":"推定")+'</div></td>'+
+        '<td class="r"><span class="num" style="color:'+d.bo.color+';font-weight:700;font-size:16px">'+d.bo.score+'</span><div class="mini" style="color:'+d.bo.color+'">'+d.bo.level+'</div></td>'+
         '<td class="r num" style="color:#38E08A">▶ '+fmt(entryPrice(r))+'<div class="mini" style="color:var(--ink-3)">壁 '+fmt(r.wallLow)+'〜'+fmt(r.wallHigh)+' / 出来高'+(r.vol20!=null?r.vol20.toFixed(1):"-")+'倍</div></td>'+
         '<td class="r stopcell">'+yen(d.stop)+'<div class="mini" style="color:var(--down)">'+d.stopPct.toFixed(1)+'%</div></td>'+
       '</tr>';
@@ -679,6 +677,13 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     {th:"② 壁より上の別の壁",td:"過去2年以上の高値しこりが上に控えていないか"},
     {th:"③ 信用残のタイムラグ",td:"前週金曜公表のため最新動向のズレを考慮したか"}
   ];
+  var FUNDCHECK=[
+    {th:"増収増益トレンド",td:"直近決算・会社計画が売上/利益とも伸びているか"},
+    {th:"割安〜妥当なバリュエーション",td:"PER/PBRが業種平均・成長率に対して過熱していないか"},
+    {th:"財務の健全性",td:"自己資本比率が高く、有利子負債が重くないか"},
+    {th:"テーマ/カタリストの実体",td:"AI・防衛・半導体などの需要が業績に結びつくか"},
+    {th:"流動性・時価総額",td:"機関投資家が買える規模・出来高があるか"}
+  ];
   function renderInspector(){
     var d=DATA.filter(function(x){return x.code===state.selected;})[0]||DATA[0];
     if(!d){ $("insp").innerHTML='<div class="card"><div class="isec"><p style="color:var(--ink-3)">銘柄がありません</p></div></div>'; return; }
@@ -688,8 +693,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     var mom=0, sser=d.series||[]; if(sser.length>5){ var past=sser[Math.max(0,sser.length-20)].c; if(past>0) mom=(r.close/past-1)*100; }
     function kv(label,val,hot){ return '<div class="kv-row"><span class="kv-l">'+label+'</span><span class="kv-v'+(hot?" hot":"")+'">'+val+'</span></div>'; }
     var rr=((takeProfit(r)-entryPrice(r))/(entryPrice(r)-r.wallLow||1));
-    var wrLabel=(d.winRateReal?"実測勝率 "+d.winRate+"%（過去2年・"+d.trials+"回）":"推定勝率 "+d.winRate+"%（目安・要バックテスト）");
-    var boKv='<div class="bo-verdict" style="border-left-color:'+wrColor(d.winRate)+'"><b style="color:'+wrColor(d.winRate)+'">'+wrLabel+'</b> ・突破可能性 '+bo.level+'　'+esc(bo.verdict)+(d.winRateReal?'<br><span style="color:var(--ink-3);font-size:11px">検証ルール：直近50日高値を大商い(20日比1.5倍以上)でブレイク→利確+10%/損切り-5%/保有20営業日</span>':'')+'</div>'+
+    var boKv='<div class="bo-verdict" style="border-left-color:'+bo.color+'"><b style="color:'+bo.color+'">突破可能性 '+bo.level+'（'+bo.score+'）</b>　'+esc(bo.verdict)+'</div>'+
       '<div class="kv">'+
         kv("▶ エントリー価格（壁上限）", fmt(entryPrice(r))+"円", true)+
         kv("損切り（壁下限）", fmt(r.wallLow)+"円（"+d.stopPct.toFixed(1)+"%）", false)+
@@ -701,12 +705,30 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
         kv("直近20営業日 騰落", (mom>=0?"+":"")+mom.toFixed(1)+"%", mom>=0)+
         kv("壁の厚み（集中度）", (r.conc!=null?r.conc.toFixed(0)+"%":"-"), false)+
       '</div>';
-    var checks=CHECKITEMS.map(function(c,i){
-      var key=r.code+":"+i, on=!!state.checks[key];
+    function checkLi(c,key){ var on=!!state.checks[key];
       return '<li data-key="'+key+'" role="checkbox" aria-checked="'+on+'" tabindex="0">'+
         '<span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="#08110c" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span>'+
-        '<span class="ct"><span class="th">'+c.th+'</span><span class="td">'+c.td+'</span></span></li>';
-    }).join("");
+        '<span class="ct"><span class="th">'+c.th+'</span><span class="td">'+c.td+'</span></span></li>'; }
+    var checks=CHECKITEMS.map(function(c,i){ return checkLi(c, r.code+":"+i); }).join("");
+    var fundChecks=FUNDCHECK.map(function(c,i){ return checkLi(c, r.code+":F"+i); }).join("");
+    // ファンダメンタル数値（J-Quants実データがあれば表示、なければ定性チェックへ誘導）
+    var f2=d.fund, fundNums;
+    function fkOku(v){ return v==null?"-":(Math.abs(v)>=1e8?fmt(v/1e8)+"億円":fmt(v)+"円"); }
+    if(f2 && !f2.error && (f2.sales!=null||f2.eps!=null||f2.roe!=null||f2.per!=null)){
+      fundNums='<div class="kv">'+
+        kv("売上高", fkOku(f2.sales), false)+
+        kv("営業利益", fkOku(f2.opProfit), (f2.opProfit||0)>0)+
+        kv("純利益", fkOku(f2.netProfit), (f2.netProfit||0)>0)+
+        kv("EPS（1株利益）", f2.eps!=null?f2.eps.toFixed(1)+"円":"-", false)+
+        kv("PER（株価収益率）", f2.per!=null?f2.per.toFixed(1)+"倍":"-", (f2.per!=null&&f2.per>0&&f2.per<=15))+
+        kv("PBR（株価純資産倍率）", f2.pbr!=null?f2.pbr.toFixed(2)+"倍":"-", (f2.pbr!=null&&f2.pbr>0&&f2.pbr<=1.5))+
+        kv("ROE（自己資本利益率）", f2.roe!=null?f2.roe.toFixed(1)+"%":"-", (f2.roe!=null&&f2.roe>=10))+
+        kv("自己資本比率", f2.equityRatio!=null?f2.equityRatio.toFixed(1)+"%":"-", (f2.equityRatio!=null&&f2.equityRatio>=40))+
+        kv("配当（年）", f2.dividend!=null?f2.dividend.toFixed(0)+"円":"-", false)+
+      '</div><div class="bo-note" style="margin-top:6px">出典: J-Quants /fins/summary'+(f2.period?'（'+esc(f2.period)+'）':'')+'</div>';
+    } else {
+      fundNums='<div class="grp"><div class="note">ファンダの数値は <b>J-Quants API</b>（無料・要APIキー）連携で自動表示されます。未設定のため、下の<b>定性チェック</b>で確認してください。'+((f2&&f2.error)?'<br><span style="color:var(--amber)">取得エラー: '+esc(f2.error)+'</span>':'')+'</div></div>';
+    }
     var dchgHtml = dayChg!=null ? '<div class="t-chg '+(dayChg>=0?"up":"down")+'">前日比 '+(dayChg>=0?"+":"")+dayChg.toFixed(2)+'%</div>' : '';
     $("insp").innerHTML=
       '<div class="card">'+
@@ -715,8 +737,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
             '<div><div class="t-price num">'+yen(r.close)+'</div>'+dchgHtml+'<div class="t-chg" style="color:var(--ink-3)">壁上限比 '+(chg>=0?"+":"")+chg.toFixed(1)+'%</div></div>'+
           '</div>'+
           '<div class="r2"><span class="badge" style="--sc:'+st.color+'"><span class="bd"></span>'+st.label+'</span>'+
-            '<span class="bigscore" style="color:'+wrColor(d.winRate)+';border:1px solid '+wrColor(d.winRate)+'55;background:'+wrColor(d.winRate)+'12">'+(d.winRateReal?"実測勝率 ":"推定勝率 ")+d.winRate+'%'+(d.winRateReal?"（"+d.trials+"回）":"")+'</span>'+
-            '<span class="bigscore" style="color:'+bo.color+';border:1px solid '+bo.color+'55;background:'+bo.color+'12">突破 '+bo.level+'</span>'+
+            '<span class="bigscore" style="color:'+bo.color+';border:1px solid '+bo.color+'55;background:'+bo.color+'12">突破可能性 '+bo.score+' ・'+bo.level+'</span>'+
             (d.recommend?'<span class="recflag">★推薦（しこり内/接近）</span>':'')+(d.passScreen?'<span class="screenflag">一次通過</span>':'')+'</div>'+
         '</div>'+
         '<div class="isec"><h3>価格推移としこり壁（直近'+(d.series.length)+'営業日）</h3>'+chartCombined(d)+
@@ -732,8 +753,9 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
           '<div class="stopbox"><div class="b"><div class="l">しこり壁 価格帯</div><div class="n">'+fmt(r.wallLow)+'〜'+fmt(r.wallHigh)+'</div></div>'+
             '<div class="b stop"><div class="l">損切りライン（幅）</div><div class="n">'+yen(d.stop)+' <span style="font-size:12px">('+d.stopPct.toFixed(1)+'%)</span></div></div></div>'+
         '</div>'+
-        '<div class="isec"><h3>売買プラン（勝率・エントリー・損切り）</h3>'+boKv+'</div>'+
-        '<div class="isec"><h3>人間が確認する3大ポイント</h3><ul class="check">'+checks+'</ul></div>'+
+        '<div class="isec"><h3>売買プラン（エントリー・損切り・利確）</h3>'+boKv+'</div>'+
+        '<div class="isec"><h3>ファンダメンタル（業績・割安度・財務）</h3>'+fundNums+'<ul class="check" style="margin-top:12px">'+fundChecks+'</ul></div>'+
+        '<div class="isec"><h3>需給・人間が確認する3大ポイント</h3><ul class="check">'+checks+'</ul></div>'+
       '</div>';
     Array.prototype.forEach.call($("insp").querySelectorAll(".check li"),function(li){
       function toggle(){var k=li.getAttribute("data-key");state.checks[k]=!state.checks[k];renderInspector();}
@@ -781,21 +803,19 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     lines.push("📊 青天井スキャナー 定時配信（平日17:40）");
     lines.push("集計 "+TODAY+" ／ "+(SOURCE.mode==="live"?"実データ Yahoo Finance":"デモデータ")+(SOURCE.mode==="live"?"（需給なし換算）":""));
     lines.push("");
-    var hot=DATA.filter(function(d){return d.winRate>=60;});
-    var avg=DATA.length?DATA.reduce(function(s,d){return s+d.winRate;},0)/DATA.length:0;
+    var hot=DATA.filter(function(d){return d.bo.score>=55;});
     var rec=DATA.filter(function(d){return d.recommend;});
-    var strat=(SOURCE.strategy&&SOURCE.strategy.winRate!=null)?" ／ 戦略実測勝率 "+SOURCE.strategy.winRate+"%("+SOURCE.strategy.trials+"回)":"";
-    lines.push("🎯 勝率60%以上: "+hot.length+"銘柄 ／ 推薦(しこり内/接近): "+rec.length+"銘柄 ／ 平均勝率 "+avg.toFixed(0)+"%"+strat);
+    lines.push("🎯 突破可能性 高い以上: "+hot.length+"銘柄 ／ 推薦(しこり内/接近): "+rec.length+"銘柄");
     function pushStock(d,i){
-      var r=d.raw, st=STAGES[d.stage];
-      var icon=d.winRate>=65?"🟢":d.winRate>=55?"🔵":d.winRate>=45?"🟡":"⚪";
-      lines.push((i+1)+". ["+r.code+"] "+r.name+"  "+(d.winRateReal?"実測勝率 ":"推定勝率 ")+d.winRate+"%"+(d.winRateReal?"("+d.trials+"回)":"")+" "+icon+st.label+(d.recommend?" ★推薦":""));
+      var r=d.raw, st=STAGES[d.stage], f2=d.fund;
+      var icon=d.bo.score>=75?"🟢":d.bo.score>=55?"🔵":d.bo.score>=35?"🟡":"⚪";
+      lines.push((i+1)+". ["+r.code+"] "+r.name+"  突破可能性 "+d.bo.score+"("+d.bo.level+") "+icon+st.label+(d.recommend?" ★推薦":""));
       lines.push("   ▶エントリー "+yen(r.wallHigh)+" / 損切り "+yen(d.stop)+"（"+d.stopPct.toFixed(1)+"%）/ 利確目安 "+yen(r.wallHigh+(r.wallHigh-r.wallLow)));
-      lines.push("   現在値 "+yen(r.close)+" / 出来高 "+(r.vol20!=null?r.vol20.toFixed(1):"-")+"倍");
+      lines.push("   現在値 "+yen(r.close)+" / 出来高 "+(r.vol20!=null?r.vol20.toFixed(1):"-")+"倍"+((f2&&!f2.error&&f2.per!=null)?" / PER "+f2.per.toFixed(1)+"倍"+(f2.roe!=null?" ROE "+f2.roe.toFixed(1)+"%":""):""));
     }
     lines.push("──── ★推薦（しこり内/接近）────");
     if(rec.length){ rec.slice(0,8).forEach(pushStock); } else { lines.push("該当なし（現在値がしこり壁の中／少し下の銘柄は不在）"); }
-    lines.push("──── 勝率 上位 ────");
+    lines.push("──── 突破可能性 上位 ────");
     DATA.slice(0,8).forEach(pushStock);
     lines.push("─────────────");
     lines.push("※直近10営業日は壁計算から除外 / 信用残は需給なし換算。投資は自己責任で。");
@@ -832,9 +852,9 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
         return {code:s.code,name:s.name,market:s.market,close:s.close,prev:s.prev,
           wallLow:s.wallLow,wallHigh:s.wallHigh,conc:s.conc,box:s.box,volPrev:s.volPrev,vol20:s.vol20,
           supportConfirmed:s.supportConfirmed,agedDays:s.agedDays,yearLow:s.yearLow,yearHigh:s.yearHigh,
-          passScreen:s.passScreen,noCredit:true,winRate:s.winRate,trials:s.trials,profile:s.profile,series:s.series};
+          passScreen:s.passScreen,noCredit:true,fund:s.fund||null,profile:s.profile,series:s.series};
       });
-      setDataset(raws,{mode:"live",updatedAt:j.updatedAt,failed:(j.failed&&j.failed.length)||0,strategy:j.strategy||null});
+      setDataset(raws,{mode:"live",updatedAt:j.updatedAt,failed:(j.failed&&j.failed.length)||0,fundamentals:j.fundamentals||null});
     }).catch(function(){
       SOURCE={mode:"demo",reason:"実データ未取得（デモ表示）"}; renderSrcbar();
     });
