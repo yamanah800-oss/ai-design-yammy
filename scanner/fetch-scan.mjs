@@ -92,20 +92,27 @@ async function fetchOHLCV(sym, range = '2y') {
   throw lastErr || new Error('取得失敗');
 }
 
-// しこり壁の測定（仕様 §②）
-function computeWall(high, low, close, vol) {
+// しこり壁の測定（仕様 §②）— 現在値の近辺（下72%〜上112%）に絞って40価格帯の
+// 出来高プロファイルを作り、「現在値付近で意識される上値抵抗（直近のしこり）」を検出する。
+// 全期間の最大出来高帯（1年前の安値圏など）を壁にすると、上昇トレンド株で壁が
+// はるか下に置かれ現在値と大きく乖離してしまうため、現在値中心のレンジに限定する。
+function computeWall(high, low, close, vol, current) {
   const n = close.length;
-  let minL = Infinity, maxH = -Infinity;
-  for (let i = 0; i < n; i++) { if (low[i] < minL) minL = low[i]; if (high[i] > maxH) maxH = high[i]; }
-  const span = (maxH - minL) || 1, step = span / BANDS;
+  const loR = current * 0.72, hiR = current * 1.12;   // 現在値を中心にした価格レンジ
+  const span = (hiR - loR) || 1, step = span / BANDS;
   const bandVol = new Array(BANDS).fill(0);
-  const cut = Math.max(0, n - EXCLUDE);        // 直近EXCLUDE営業日は出来高計算から除外
+  const cut = Math.max(0, n - EXCLUDE);               // 直近EXCLUDE営業日は出来高計算から除外
+  let totalAll = 0;
   for (let i = 0; i < cut; i++) {
     const v = vol[i] || 0; if (!v) continue;
-    let b1 = Math.floor((low[i] - minL) / step), b2 = Math.floor((high[i] - minL) / step);
+    totalAll += v;
+    if (high[i] < loR || low[i] > hiR) continue;      // レンジ外の日は壁計算に寄与しない
+    const a = Math.max(low[i], loR), b = Math.min(high[i], hiR);
+    const frac = (b - a) / ((high[i] - low[i]) || 1);  // その日の値幅のうちレンジ内の割合
+    let b1 = Math.floor((a - loR) / step), b2 = Math.floor((b - loR) / step);
     b1 = Math.max(0, Math.min(BANDS - 1, b1)); b2 = Math.max(0, Math.min(BANDS - 1, b2));
-    const cnt = b2 - b1 + 1, share = v / cnt;   // 跨ぐ価格帯に均等配分
-    for (let b = b1; b <= b2; b++) bandVol[b] += share;
+    const cnt = b2 - b1 + 1, share = v * frac / cnt;   // 跨ぐ価格帯に均等配分
+    for (let bb = b1; bb <= b2; bb++) bandVol[bb] += share;
   }
   // ピーク帯 → その60%以上の隣接帯を左右最大8帯まで結合
   let peak = 0, pi = 0;
@@ -114,15 +121,15 @@ function computeWall(high, low, close, vol) {
   let loB = pi, hiB = pi;
   for (let k = 1; k <= 8; k++) { const b = pi - k; if (b >= 0 && bandVol[b] >= thr) loB = b; else break; }
   for (let k = 1; k <= 8; k++) { const b = pi + k; if (b < BANDS && bandVol[b] >= thr) hiB = b; else break; }
-  const wallLow = minL + loB * step, wallHigh = minL + (hiB + 1) * step;
-  const total = bandVol.reduce((a, b) => a + b, 0) || 1;
+  const wallLow = loR + loB * step, wallHigh = loR + (hiB + 1) * step;
+  const total = totalAll || 1;
   let wallVol = 0; for (let b = loB; b <= hiB; b++) wallVol += bandVol[b];
   const conc = wallVol / total * 100;
   let inWall = 0; for (let i = 0; i < n; i++) if (close[i] >= wallLow && close[i] <= wallHigh) inWall++;
   const box = inWall / n * 100;
   const profile = [];
-  for (let b = 0; b < BANDS; b++) profile.push({ p: r1(minL + (b + 0.5) * step), lo: r1(minL + b * step), hi: r1(minL + (b + 1) * step), v: Math.round(bandVol[b]) });
-  return { wallLow: r1(wallLow), wallHigh: r1(wallHigh), conc: r1(conc), box: r1(box), profile, yearLow: r1(minL), yearHigh: r1(maxH) };
+  for (let b = 0; b < BANDS; b++) profile.push({ p: r1(loR + (b + 0.5) * step), lo: r1(loR + b * step), hi: r1(loR + (b + 1) * step), v: Math.round(bandVol[b]) });
+  return { wallLow: r1(wallLow), wallHigh: r1(wallHigh), conc: r1(conc), box: r1(box), profile, yearLow: r1(loR), yearHigh: r1(hiR) };
 }
 
 // 出来高倍率（直近5営業日の最大値）
@@ -152,11 +159,11 @@ function analyzeOne(h, f) {
   if (N < 60) throw new Error('データ不足 (' + N + '営業日)');
   const s = Math.max(0, N - LOOKBACK);
   const high = f.high.slice(s), low = f.low.slice(s), close = f.close.slice(s), vol = f.vol.slice(s), date = f.date.slice(s);
-  const wall = computeWall(high, low, close, vol);
-  const vr = volRatios(vol);
-  const sh = stageHelpers(high, low, close, wall.wallLow, wall.wallHigh);
   const price = f.price != null ? f.price : close[close.length - 1];
   const prev = f.prev != null ? f.prev : close[close.length - 2];
+  const wall = computeWall(high, low, close, vol, price);
+  const vr = volRatios(vol);
+  const sh = stageHelpers(high, low, close, wall.wallLow, wall.wallHigh);
   const volLast = vol[vol.length - 1] || 0;
   const avg3m = (() => { const a = vol.slice(-60); return a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0; })();
   const tradingValue = price * volLast;                       // 売買代金（円）
