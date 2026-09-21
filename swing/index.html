@@ -128,7 +128,15 @@ footer a{color:var(--ink-2)}
 .rowhint{font-size:11px;color:var(--ink-3);padding:8px 16px}
 /* 編集モード：削除ボタン & 復元バー */
 .btn.sm{padding:4px 10px;font-size:12px}
-.tools{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tools{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* 目立つツールボタン（銘柄を追加 / 編集・削除） */
+.toolbtn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;font-size:13px;font-weight:700;border-radius:8px;border:1.5px solid var(--rule);background:var(--surface);color:var(--ink);cursor:pointer;line-height:1;transition:background .12s,border-color .12s,color .12s}
+.toolbtn .ic{font-size:15px;font-weight:800;line-height:1}
+.toolbtn.add{border-color:var(--add);color:var(--add);background:var(--add-soft)}
+.toolbtn.add:hover,.toolbtn.add.on{background:var(--add);color:#fff;border-color:var(--add)}
+.toolbtn.edit{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.toolbtn.edit:hover,.toolbtn.edit.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+@media (max-width:520px){ .panel-h{align-items:stretch} .tools{width:100%;gap:6px} .toolbtn{flex:1 1 0;justify-content:center;padding:9px 10px} }
 .row.editing{cursor:default}
 .row.editing:hover{background:transparent}
 .delrow{margin-top:6px;border:1px solid var(--exit);background:var(--exit-soft);color:var(--exit);border-radius:5px;padding:3px 9px;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
@@ -230,7 +238,7 @@ footer a{color:var(--ink-2)}
   <section class="idxbar" id="idx" aria-label="市場指標"></section>
 
   <section class="panel">
-    <div class="panel-h"><h2>本日のアクション</h2><span class="tools"><span class="eyebrow" id="asof"></span><button class="btn sm" id="addBtn">＋ 銘柄を追加</button><button class="btn sm" id="editBtn">銘柄を編集</button></span></div>
+    <div class="panel-h"><h2>本日のアクション</h2><span class="tools"><span class="eyebrow" id="asof"></span><button class="toolbtn add" id="addBtn"><span class="ic">＋</span>銘柄を追加</button><button class="toolbtn edit" id="editBtn"><span class="ic">✎</span>編集・削除</button></span></div>
     <form id="addform" hidden>
       <div class="addrow">
         <input id="addcode" type="text" inputmode="text" autocomplete="off" placeholder="コード / ティッカー（例：7203、AAPL）" aria-label="証券コードまたはティッカー">
@@ -826,7 +834,7 @@ $('#auto').onchange = () => { try{ localStorage.setItem('swinglive.auto', $('#au
 try { const a = localStorage.getItem('swinglive.auto'); if (a === '0') $('#auto').checked = false; } catch(_){}
 
 const editBtn = $('#editBtn');
-if (editBtn) editBtn.onclick = () => { editMode = !editMode; editBtn.textContent = editMode ? '完了' : '銘柄を編集'; editBtn.classList.toggle('primary', editMode); render(); };
+if (editBtn) editBtn.onclick = () => { editMode = !editMode; editBtn.innerHTML = editMode ? '<span class="ic">✓</span>完了' : '<span class="ic">✎</span>編集・削除'; editBtn.classList.toggle('on', editMode); render(); };
 
 /* ---------- 銘柄の追加（日米自動判定・localStorage保存） ---------- */
 const addForm = $('#addform'), addBtn = $('#addBtn'), addCode = $('#addcode'), addName = $('#addname'), addBadge = $('#addbadge');
@@ -839,11 +847,11 @@ function updateAddBadge(){
 if (addBtn) addBtn.onclick = () => {
   const open = addForm.hidden;
   addForm.hidden = !open;
-  addBtn.classList.toggle('primary', open);
+  addBtn.classList.toggle('on', open);
   if (open){ updateAddBadge(); addCode.focus(); }
 };
 if (addCode) addCode.addEventListener('input', updateAddBadge);
-if ($('#addcancel')) $('#addcancel').onclick = () => { addForm.hidden = true; addBtn.classList.remove('primary'); };
+if ($('#addcancel')) $('#addcancel').onclick = () => { addForm.hidden = true; addBtn.classList.remove('on'); };
 if (addForm) addForm.addEventListener('submit', e => {
   e.preventDefault();
   const d = detectSym(addCode.value);
@@ -851,14 +859,14 @@ if (addForm) addForm.addEventListener('submit', e => {
   if (HOLDINGS.some(h=>h.code===d.code) || custom.some(c=>c.code===d.code)){
     if (removed.has(d.code)){ removed.delete(d.code); saveRemoved(); }
     selected = d.code;
-    addForm.hidden = true; addBtn.classList.remove('primary'); addCode.value=''; addName.value='';
+    addForm.hidden = true; addBtn.classList.remove('on'); addCode.value=''; addName.value='';
     render(); refresh();
     return;
   }
   custom.push({code:d.code, yahoo:d.yahoo, name:(addName.value.trim() || d.code), market:d.market, cur:d.cur});
   saveCustom();
   selected = d.code;
-  addCode.value=''; addName.value=''; addForm.hidden = true; addBtn.classList.remove('primary');
+  addCode.value=''; addName.value=''; addForm.hidden = true; addBtn.classList.remove('on');
   render();
   refresh(); // サーバーに既にあれば即数値、無ければ「データ待ち」
 });
@@ -902,7 +910,7 @@ if (removedbarEl) removedbarEl.addEventListener('click', e => {
   render();
 });
 
-try { $('#ver').textContent = 'build v26 (ボリンジャーバンド)'; } catch(_){}
+try { $('#ver').textContent = 'build v27 (追加/編集ボタン強調)'; } catch(_){}
 setInterval(renderMkt, 30000);
 render();
 refresh().then(startTimer);
