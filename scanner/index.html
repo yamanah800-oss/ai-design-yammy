@@ -74,14 +74,15 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
 .srcbar .sep{color:var(--ink-4)}
 .srcbar .warn{color:var(--amber)}
 
-.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 17px;position:relative;overflow:hidden}
 .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--edge,var(--ink-4))}
 .stat .k{font-size:11px;color:var(--ink-2);letter-spacing:.04em;font-weight:500}
 .stat .v{font-family:var(--mono);font-size:28px;font-weight:600;margin-top:5px;line-height:1;font-variant-numeric:tabular-nums}
 .stat .u{font-size:12px;color:var(--ink-3);font-family:var(--sans);font-weight:500;margin-left:3px}
 .stat.c-scan{--edge:var(--ink-3)} .stat.c-break{--edge:var(--s-breakout)}
-.stat.c-high{--edge:var(--amber)} .stat.c-avg{--edge:var(--cyan)}
+.stat.c-high{--edge:var(--amber)} .stat.c-avg{--edge:var(--cyan)} .stat.c-rec{--edge:#A78BFA}
+.recflag{font-size:9.5px;color:#B79BFA;border:1px solid color-mix(in srgb,#A78BFA 48%,transparent);border-radius:5px;padding:1px 5px;margin-left:6px;background:color-mix(in srgb,#A78BFA 16%,transparent);font-weight:600}
 
 .toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
@@ -364,7 +365,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
       raw:r, code:r.code, name:r.name, market:r.market||"", stage:stage,
       cond1:cond1,cond2:cond2,cond3:cond3, total:total,
       stop:r.wallLow, stopPct:(r.wallLow-r.close)/r.close*100, noCredit:!!r.noCredit,
-      passScreen:!!r.passScreen,
+      passScreen:!!r.passScreen, recommend:(stage==="approach"||stage==="testing"),
       items:[
         {g:1,label:"壁の厚さ",        v:c1a,max:15,c:"#22D3EE"},
         {g:1,label:"ボックス滞留",    v:c1b,max:10,c:"#22D3EE"},
@@ -424,7 +425,10 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
   function setDataset(rawList, source){
     DATA = rawList.map(buildItem).sort(function(x,y){return y.total-x.total;});
     SOURCE = source;
-    if(!state.selected || !DATA.some(function(d){return d.code===state.selected;})) state.selected = DATA.length?DATA[0].code:null;
+    if(!state.selected || !DATA.some(function(d){return d.code===state.selected;})){
+      var rec=DATA.filter(function(d){return d.recommend;});
+      state.selected = (rec[0]||DATA[0]||{}).code || null;   // 推薦（しこり内/接近）を優先表示
+    }
     renderAll();
   }
 
@@ -459,8 +463,10 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     var brk=DATA.filter(function(d){return d.stage==="breakout";}).length;
     var high=DATA.filter(function(d){return d.total>=80;}).length;
     var avg=n?DATA.reduce(function(s,d){return s+d.total;},0)/n:0;
+    var rec=DATA.filter(function(d){return d.recommend;}).length;
     var cards=[
       {cls:"c-scan", k:"スキャン対象銘柄数", v:fmt(n),        u:"銘柄"},
+      {cls:"c-rec",  k:"推薦（しこり内/接近）", v:fmt(rec),    u:"銘柄"},
       {cls:"c-break",k:"ブレイク確定",       v:fmt(brk),      u:"銘柄"},
       {cls:"c-high", k:"高得点（80点以上）", v:fmt(high),     u:"銘柄"},
       {cls:"c-avg",  k:"平均スコア",         v:avg.toFixed(1),u:"点"}
@@ -472,11 +478,11 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
   }
 
   function renderChips(){
-    var order=["all","breakout","support","testing","approach","weak","above","bluesky","out"];
+    var order=["all","recommend","breakout","support","testing","approach","weak","above","bluesky","out"];
     $("chips").innerHTML=order.map(function(k){
-      var cnt = k==="all"?DATA.length:DATA.filter(function(d){return d.stage===k;}).length;
-      var label = k==="all"?"すべて":STAGES[k].label;
-      var col = k==="all"?"#9DACC6":STAGES[k].color;
+      var cnt = k==="all"?DATA.length : k==="recommend"?DATA.filter(function(d){return d.recommend;}).length : DATA.filter(function(d){return d.stage===k;}).length;
+      var label = k==="all"?"すべて" : k==="recommend"?"★ 推薦（しこり内/接近）" : STAGES[k].label;
+      var col = k==="all"?"#9DACC6" : k==="recommend"?"#A78BFA" : STAGES[k].color;
       return '<button class="chip" type="button" data-k="'+k+'" aria-pressed="'+(state.filter===k)+'" style="--c:'+col+'"><span class="dot"></span>'+label+'<span class="cnt">'+cnt+'</span></button>';
     }).join("");
     Array.prototype.forEach.call($("chips").querySelectorAll(".chip"),function(el){
@@ -484,7 +490,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     });
   }
 
-  function rows(){ return DATA.filter(function(d){return state.filter==="all"||d.stage===state.filter;}); }
+  function rows(){ return DATA.filter(function(d){ if(state.filter==="all")return true; if(state.filter==="recommend")return d.recommend; return d.stage===state.filter; }); }
   function renderTable(){
     var list=rows();
     $("table-meta").textContent=list.length+" 銘柄表示";
@@ -497,7 +503,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
         '<td><div class="code">'+esc(r.code)+'</div><div class="nm">'+esc(r.name)+'</div></td>'+
         '<td class="r num">'+yen(r.close)+'</td>'+
         '<td><span class="badge" style="--sc:'+st.color+'"><span class="bd"></span>'+st.label+'</span>'+
-            (d.passScreen?'<span class="screenflag">一次通過</span>':'')+(d.noCredit?'<span class="badgeflag">需給なし換算</span>':'')+'</td>'+
+            (d.recommend?'<span class="recflag">★推薦</span>':'')+(d.passScreen?'<span class="screenflag">一次通過</span>':'')+'</td>'+
         '<td class="r"><div class="gauge"><div class="track"><div class="fill" style="width:'+Math.min(d.total,100)+'%;--gc:'+gc+'"></div></div>'+
             '<span class="sc" style="color:'+gc+'">'+d.total.toFixed(1)+'</span></div></td>'+
         '<td class="r num">'+fmt(r.wallLow)+'〜'+fmt(r.wallHigh)+'<div class="mini">出来高 '+(r.vol20!=null?r.vol20.toFixed(1):"-")+'倍</div></td>'+
@@ -552,9 +558,9 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     var priceLine='<line x1="'+timeX+'" y1="'+cy.toFixed(1)+'" x2="'+chartRight+'" y2="'+cy.toFixed(1)+'" stroke="#22D3EE" stroke-width="1.3" stroke-dasharray="4 3"/>'+
       '<circle cx="'+px(n-1).toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="3" fill="#22D3EE"/>';
     var stopLine='<line x1="'+timeX+'" y1="'+sy.toFixed(1)+'" x2="'+chartRight+'" y2="'+sy.toFixed(1)+'" stroke="#F26D6D" stroke-width="1.2" stroke-dasharray="2 3"/>';
-    var breakBadge = broke ? '<text x="'+(px(n-1)-4).toFixed(1)+'" y="'+(clamp(cy,padT+16,padT+ch)-9).toFixed(1)+'" fill="#2FD98A" font-size="9" font-weight="700" text-anchor="end" font-family="IBM Plex Sans JP,sans-serif">▲ 天井突破</text>' : '';
+    var breakBadge = broke ? '<text x="'+(px(n-1)-4).toFixed(1)+'" y="'+(clamp(cy,padT+16,padT+ch)-9).toFixed(1)+'" fill="#2FD98A" font-size="9" font-weight="700" text-anchor="end" font-family="IBM Plex Sans JP,sans-serif">▲ 壁突破→青天井</text>' : '';
     function lab(yy,txt,col,weight){ var Y=clamp(yy,padT+7,padT+ch-1); return '<text x="'+labelX+'" y="'+(Y+3).toFixed(1)+'" fill="'+col+'" font-size="9" font-weight="'+(weight||400)+'" font-family="IBM Plex Mono,monospace">'+txt+'</text>'; }
-    var labels=lab(wyH,"天井 "+fmt(r.wallHigh),"#F6B01E",700)+lab(cy,"現在 "+fmt(r.close),"#22D3EE",600)+lab(sy,"損切 "+fmt(r.wallLow),"#F26D6D");
+    var labels=lab(wyH,"壁上 "+fmt(r.wallHigh),"#F6B01E",700)+lab(cy,"現在 "+fmt(r.close),"#22D3EE",600)+lab(sy,"損切 "+fmt(r.wallLow),"#F26D6D");
     var fromLbl=(series[0]&&typeof series[0].d==="string")?series[0].d.slice(5):"";
     var toLbl=(series[n-1]&&typeof series[n-1].d==="string")?series[n-1].d.slice(5):"";
     var xaxis='<text x="'+timeX+'" y="'+(H-12)+'" fill="#5E6E8A" font-size="8.5" font-family="IBM Plex Mono,monospace">'+(fromLbl||"約120営業日前")+'</text>'+
@@ -605,12 +611,12 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
           '</div>'+
           '<div class="r2"><span class="badge" style="--sc:'+st.color+'"><span class="bd"></span>'+st.label+'</span>'+
             '<span class="bigscore" style="color:'+gc+';border:1px solid '+gc+'55;background:'+gc+'12">'+d.total.toFixed(1)+' 点</span>'+
-            (d.passScreen?'<span class="screenflag">一次スクリーニング通過</span>':'')+(d.noCredit?'<span class="badgeflag">需給なし換算</span>':'')+'</div>'+
+            (d.recommend?'<span class="recflag">★推薦（しこり内/接近）</span>':'')+(d.passScreen?'<span class="screenflag">一次通過</span>':'')+(d.noCredit?'<span class="badgeflag">需給なし換算</span>':'')+'</div>'+
         '</div>'+
-        '<div class="isec"><h3>価格推移と天井（直近'+(d.series.length)+'営業日）</h3>'+chartCombined(d)+
+        '<div class="isec"><h3>価格推移としこり壁（直近'+(d.series.length)+'営業日）</h3>'+chartCombined(d)+
           '<div class="chart-legend">'+
             '<span style="color:#22D3EE"><i style="background:#22D3EE"></i>株価</span>'+
-            '<span style="color:#F6B01E"><i style="background:#F6B01E"></i>天井（しこり壁上限）</span>'+
+            '<span style="color:#F6B01E"><i style="background:#F6B01E"></i>しこり壁 上限（上値抵抗）</span>'+
             '<span style="color:#F472B6"><i style="background:#F472B6"></i>青天井ゾーン</span>'+
             '<span style="color:#22D3EE"><i class="dash"></i>現在値</span>'+
             '<span style="color:#F26D6D"><i class="dash"></i>損切り（壁下限）</span>'+
@@ -673,15 +679,19 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
     lines.push("");
     var high=DATA.filter(function(d){return d.total>=80;});
     var avg=DATA.length?DATA.reduce(function(s,d){return s+d.total;},0)/DATA.length:0;
-    lines.push("🎯 高得点（80点以上）: "+high.length+"銘柄 ・ 平均"+avg.toFixed(1)+"点");
-    lines.push("─────────────");
-    DATA.slice(0,10).forEach(function(d,i){
+    var rec=DATA.filter(function(d){return d.recommend;});
+    lines.push("🎯 推薦（しこり壁の中／少し下＝ブレイク前の仕込み場）: "+rec.length+"銘柄 ／ 高得点80点以上: "+high.length+"銘柄 ／ 平均"+avg.toFixed(1)+"点");
+    function pushStock(d,i){
       var r=d.raw, st=STAGES[d.stage];
       var icon=d.total>=80?"🟢":d.total>=60?"🔵":d.total>=40?"🟡":"⚪";
-      lines.push((i+1)+". ["+r.code+"] "+r.name+"  "+d.total.toFixed(1)+"点 "+icon+st.label+(d.passScreen?" ✅一次通過":""));
+      lines.push((i+1)+". ["+r.code+"] "+r.name+"  "+d.total.toFixed(1)+"点 "+icon+st.label+(d.recommend?" ★推薦":"")+(d.passScreen?" ✅一次通過":""));
       lines.push("   現在値 "+yen(r.close)+" / 壁 "+fmt(r.wallLow)+"〜"+fmt(r.wallHigh)+" / 出来高 "+(r.vol20!=null?r.vol20.toFixed(1):"-")+"倍");
       lines.push("   損切り "+yen(d.stop)+"（"+d.stopPct.toFixed(1)+"%）");
-    });
+    }
+    lines.push("──── ★推薦（しこり内/接近）────");
+    if(rec.length){ rec.slice(0,8).forEach(pushStock); } else { lines.push("該当なし（現在値がしこり壁の中／少し下の銘柄は不在）"); }
+    lines.push("──── スコア上位 ────");
+    DATA.slice(0,8).forEach(pushStock);
     lines.push("─────────────");
     lines.push("※直近10営業日は壁計算から除外 / 信用残は需給なし換算。投資は自己責任で。");
     return lines.join("\n");
