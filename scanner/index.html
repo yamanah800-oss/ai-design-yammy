@@ -141,6 +141,10 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 .isec h3{margin:0 0 12px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
 .chartwrap{display:block;width:100%}
 .chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;font-size:10.5px;color:var(--ink-2)}
+.range-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 10px}
+.range-btn{border:1px solid var(--line);background:var(--panel);color:var(--ink-2);border-radius:8px;padding:6px 11px;font:600 11px "IBM Plex Sans JP",sans-serif;cursor:pointer}
+.range-btn:hover{border-color:#22D3EE;color:#22D3EE}
+.range-btn.active{background:#22D3EE;color:#06131a;border-color:#22D3EE}
 .chart-legend span{display:inline-flex;align-items:center;gap:5px}
 .chart-legend i{width:12px;height:3px;border-radius:2px;display:inline-block}
 .chart-legend i.dash{background:repeating-linear-gradient(90deg,currentColor 0 3px,transparent 3px 6px)}
@@ -336,6 +340,8 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 (function(){
   "use strict";
   var TODAY = new Date().toISOString().slice(0,10);
+  var chartRange = "6m";
+  var CHART_RANGES = {"3m":63,"6m":126,"1y":252,"2y":504};
 
   var STAGES = {
     breakout:{label:"ブレイク確定",   color:"#2FD98A"},
@@ -618,7 +624,9 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
 
   // 時系列(左)＋価格帯別出来高(右)を価格軸共有で描き、天井（しこり壁上限）と青天井ゾーンを明示
   function chartCombined(d){
-    var r=d.raw, series=d.series||[], profile=d.profile||[];
+    var r=d.raw, allSeries=d.series||[], profile=d.profile||[];
+    var want=CHART_RANGES[chartRange]||126;
+    var series=allSeries.slice(Math.max(0,allSeries.length-want));
     var W=360, H=326, padT=16, padB=34;
     var timeX=8, timeW=206, gap=8, profX=timeX+timeW+gap, profW=70, labelX=profX+profW+4, chartRight=profX+profW;
     var ch=H-padT-padB;
@@ -740,7 +748,7 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
             '<span class="bigscore" style="color:'+bo.color+';border:1px solid '+bo.color+'55;background:'+bo.color+'12">突破可能性 '+bo.score+' ・'+bo.level+'</span>'+
             (d.recommend?'<span class="recflag">★推薦（しこり内/接近）</span>':'')+(d.passScreen?'<span class="screenflag">一次通過</span>':'')+'</div>'+
         '</div>'+
-        '<div class="isec"><h3>価格推移としこり壁（直近'+(d.series.length)+'営業日）</h3>'+chartCombined(d)+
+        '<div class="isec"><h3>価格推移としこり壁</h3><div class="range-tabs" role="group" aria-label="チャート期間">'+["3m","6m","1y","2y"].map(function(k){var lab={"3m":"3ヶ月","6m":"6ヶ月","1y":"1年","2y":"2年"}[k];return '<button type="button" class="range-btn'+(chartRange===k?' active':'')+'" data-range="'+k+'">'+lab+'</button>';}).join('')+'</div>'+chartCombined(d)+
           '<div class="chart-legend">'+
             '<span style="color:#22D3EE"><i style="background:#22D3EE"></i>株価</span>'+
             '<span style="color:#38E08A"><i style="background:#38E08A"></i>▶ エントリー（壁上限）</span>'+
@@ -757,6 +765,12 @@ tbody tr[aria-selected="true"] td:first-child{box-shadow:inset 3px 0 0 var(--cya
         '<div class="isec"><h3>ファンダメンタル（業績・割安度・財務）</h3>'+fundNums+'<ul class="check" style="margin-top:12px">'+fundChecks+'</ul></div>'+
         '<div class="isec"><h3>需給・人間が確認する3大ポイント</h3><ul class="check">'+checks+'</ul></div>'+
       '</div>';
+    Array.prototype.forEach.call($("insp").querySelectorAll(".range-btn"),function(btn){
+      btn.onclick=function(){
+        chartRange=btn.getAttribute("data-range")||"6m";
+        renderInspector();
+      };
+    });
     Array.prototype.forEach.call($("insp").querySelectorAll(".check li"),function(li){
       function toggle(){var k=li.getAttribute("data-key");state.checks[k]=!state.checks[k];renderInspector();}
       li.onclick=toggle;
