@@ -52,7 +52,7 @@ for (const w of WATCH) {
 const HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com'];
 const LOOKBACK = 250;   // しこり壁の測定期間（営業日）
 const EXCLUDE = 10;     // 直近10営業日は出来高計算から除外
-const CHART_N = 120;    // 時系列チャート表示本数
+const CHART_N = 504;    // 詳細チャート表示用。3か月/6か月/1年/2年切替に対応
 const BANDS = 40;
 
 const r0 = v => v == null ? null : Math.round(v);
